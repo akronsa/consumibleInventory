@@ -3,7 +3,7 @@ version: '3.8'
 services:
   glpi-middleware:
     # Si publicas tu imagen en Docker Hub o GitLab/GitHub Registry, ponla aquí:
-    image: github.com/akronsa/consumibleInventory
+    image: github.com/akronsa/consumibleinventory
     container_name: glpi_scanner_api
     restart: unless-stopped
     ports:
