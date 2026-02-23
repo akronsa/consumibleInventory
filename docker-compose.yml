@@ -3,9 +3,8 @@ version: '3.8'
 services:
   glpi-middleware:
     build: .
-    image: glpi_scanner_api:v3
     container_name: glpi_scanner_api
-    # Aquí está la magia: obligamos a que instale todo cada vez que arranca
+    # Esta línea asegura que siempre instale lo necesario al arrancar
     command: sh -c "pip install --no-cache-dir -r requirements.txt && python -m uvicorn main:app --host 0.0.0.0 --port 5000"
     restart: unless-stopped
     ports:
