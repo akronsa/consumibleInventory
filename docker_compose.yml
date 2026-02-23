@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  glpi-middleware:
+    # Si publicas tu imagen en Docker Hub o GitLab/GitHub Registry, ponla aquí:
+    image: tu-usuario/glpi-scanner-app:latest 
+    container_name: glpi_scanner_api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - GLPI_BASE_URL=${GLPI_BASE_URL}
+      - GLPI_CLIENT_ID=${GLPI_CLIENT_ID}
+      - GLPI_CLIENT_SECRET=${GLPI_CLIENT_SECRET}
+      - GLPI_USERNAME=${GLPI_USERNAME}
+      - GLPI_PASSWORD=${GLPI_PASSWORD}
+    networks:
+      - glpi_network
+
+networks:
+  glpi_network:
+    driver: bridge
