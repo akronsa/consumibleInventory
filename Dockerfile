@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 # 2. Le decimos a Docker que todo el trabajo se hará en la carpeta /app
 WORKDIR /app
-
+ENV CACHE_BUST=1
 # 3. Copiamos PRIMERO el archivo de dependencias (esto optimiza el tiempo de build)
 COPY requirements.txt .
 
