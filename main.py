@@ -48,7 +48,7 @@ def buscar_usuarios(query: str = ""):
         params["searchText"] = query 
         
     try:
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params, verify=False)
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error de conexión con GLPI: {str(e)}")
     
