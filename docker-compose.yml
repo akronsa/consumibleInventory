@@ -4,8 +4,8 @@ services:
   glpi-middleware:
     build: .
     container_name: glpi_scanner_api
-    # Esta línea asegura que siempre instale lo necesario al arrancar
-    command: sh -c "pip install --no-cache-dir -r requirements.txt && python -m uvicorn main:app --host 0.0.0.0 --port 5000"
+    # Le pasamos los nombres de los paquetes directamente a pip, adiós problemas de caché
+    command: sh -c "pip install fastapi==0.104.1 uvicorn==0.24.0 requests==2.31.0 python-dotenv==1.0.1 && python -m uvicorn main:app --host 0.0.0.0 --port 5000"
     restart: unless-stopped
     ports:
       - "5000:5000"
