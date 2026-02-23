@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 5000
 
 # 7. El comando para arrancar la API usando Uvicorn (el servidor para FastAPI)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
