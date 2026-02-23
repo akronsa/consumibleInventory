@@ -2,8 +2,10 @@ version: '3.8'
 
 services:
   glpi-middleware:
-    build: .  # <--- ESTA ES LA CLAVE. Le dice a Portainer que lea el Dockerfile del repositorio.
+    build: .
     container_name: glpi_scanner_api
+    # Esta línea fuerza a Docker a usar Python, ignorando la caché del Dockerfile viejo
+    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
     restart: unless-stopped
     ports:
       - "5000:5000"
