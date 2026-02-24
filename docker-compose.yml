@@ -13,14 +13,14 @@ services:
     expose:
       - "3000"
 
-  frontend:
-    image: nginx:alpine
-    container_name: glpi-consumibles-frontend
-    depends_on:
-      - api
-    ports:
-      - "8080:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    restart: unless-stopped
+frontend:
+  image: nginx:alpine
+  container_name: glpi-consumibles-frontend
+  depends_on:
+    - api
+  ports:
+    - "8080:80"
+  volumes:
+    - ./frontend:/usr/share/nginx/html:ro
+    - ./nginx:/etc/nginx/conf.d:ro
+  restart: unless-stopped
