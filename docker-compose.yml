@@ -19,7 +19,7 @@ services:
     depends_on:
       - api
     ports:
-      - "8080:80"
+      - "8085:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./nginx:/etc/nginx/conf.d:ro
