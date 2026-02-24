@@ -1,17 +1,18 @@
-version: "3.8"
-
 services:
   api:
     build: ./api
     container_name: glpi-consumibles-api
     environment:
       GLPI_BASE_URL: "https://glpi.akron.com.ar"
-      GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:?GLPI_APP_TOKEN not set}
-      GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN not set}
+      GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:?GLPI_APP_TOKEN missing}
+      GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN missing}
       PORT: "3000"
     restart: unless-stopped
+    # Expose es correcto si Nginx actúa como proxy reverso
     expose:
       - "3000"
+    networks:
+      - glpi_net
 
   frontend:
     image: nginx:alpine
@@ -22,5 +23,11 @@ services:
       - "8085:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro # Especificar el archivo es más seguro
     restart: unless-stopped
+    networks:
+      - glpi_net
+
+networks:
+  glpi_net:
+    driver: bridge
