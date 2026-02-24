@@ -1,0 +1,157 @@
+<!-- frontend/index.html -->
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Consumibles GLPI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    input, button { font-size: 18px; padding: 10px; width: 100%; box-sizing: border-box; }
+    .row { display: grid; gap: 8px; }
+    .small { font-size: 14px; color: #666; }
+    .ok { color: #0a7; font-weight: 600; }
+    .err { color: #c00; font-weight: 600; }
+    ul { list-style: none; padding: 0; margin: 6px 0 0; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
+    li { padding: 10px; border-top: 1px solid #eee; background: #fff; }
+    li:first-child { border-top: none; }
+    li:hover { background: #f5f5f5; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Salida de consumibles</h2>
+
+  <div class="card row">
+    <label>
+      Usuario (buscar)
+      <input id="userSearch" placeholder="Escribí username (ej: jcaamano)" autocomplete="off" />
+    </label>
+    <div id="userPick" class="small">Sin usuario seleccionado.</div>
+    <ul id="userList" hidden></ul>
+  </div>
+
+  <div class="card row">
+    <label>
+      Barcode (escaneá aquí)
+      <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" />
+    </label>
+    <button id="sendBtn">Asignar consumible</button>
+    <div id="msg" class="small"></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    let selectedUser = null;
+    let debounce = null;
+
+    function setMsg(text, cls="small") {
+      const el = $("msg");
+      el.className = cls;
+      el.textContent = text;
+    }
+
+    function setUser(user) {
+      selectedUser = user;
+      $("userPick").innerHTML = user
+        ? `Seleccionado: <b>${user.name}</b> (ID ${user.id})`
+        : "Sin usuario seleccionado.";
+      $("userList").hidden = true;
+      $("barcode").focus();
+    }
+
+    async function fetchUsers(q) {
+      const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+
+    $("userSearch").addEventListener("input", () => {
+      const q = $("userSearch").value.trim();
+      clearTimeout(debounce);
+
+      if (q.length < 2) {
+        $("userList").hidden = true;
+        return;
+      }
+
+      debounce = setTimeout(async () => {
+        try {
+          const data = await fetchUsers(q);
+          const list = data.results || [];
+          const ul = $("userList");
+          ul.innerHTML = "";
+          if (list.length === 0) {
+            ul.hidden = true;
+            return;
+          }
+          list.forEach(u => {
+            const li = document.createElement("li");
+            li.textContent = `${u.name} (ID ${u.id})`;
+            li.addEventListener("click", () => setUser(u));
+            ul.appendChild(li);
+          });
+          ul.hidden = false;
+        } catch (e) {
+          console.error(e);
+          $("userList").hidden = true;
+        }
+      }, 300);
+    });
+
+    async function consume() {
+      if (!selectedUser) {
+        setMsg("Seleccioná un usuario primero.", "err");
+        $("userSearch").focus();
+        return;
+      }
+
+      const code = $("barcode").value.trim();
+      if (!code) {
+        setMsg("Escaneá un barcode.", "err");
+        $("barcode").focus();
+        return;
+      }
+
+      setMsg("Procesando...", "small");
+
+      const r = await fetch("/api/consume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
+      });
+
+      const text = await r.text();
+      let j = null;
+      try { j = text ? JSON.parse(text) : null; } catch {}
+
+      if (!r.ok) {
+        const err = j?.detail || j?.error || text || "Error";
+        setMsg(typeof err === "string" ? err : JSON.stringify(err), "err");
+        $("barcode").select();
+        $("barcode").focus();
+        return;
+      }
+
+      setMsg(`OK: ${j.model?.name || "Modelo"} (ref ${j.model?.ref}) → consumible ID ${j.consumable_id}`, "ok");
+      $("barcode").value = "";
+      $("barcode").focus();
+    }
+
+    // Botón
+    $("sendBtn").addEventListener("click", consume);
+
+    // Enter del scanner (wedge suele mandar Enter)
+    $("barcode").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        consume();
+      }
+    });
+
+    // UX: foco directo en barcode al cargar
+    window.addEventListener("load", () => $("barcode").focus());
+  </script>
+</body>
+</html>
