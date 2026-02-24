@@ -31,9 +31,9 @@ frontend:
       - glpi_net
 
 configs:
-  nginx_config:
-    file: ./nginx/default.conf
+nginx_config:
+  file: ./nginx/default.conf
 
 networks:
-  glpi_net:
-    driver: bridge
+glpi_net:
+  driver: bridge
