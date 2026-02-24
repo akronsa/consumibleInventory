@@ -14,21 +14,21 @@ services:
     networks:
       - glpi_net
 
-frontend:
-    image: nginx:alpine
-    container_name: glpi-consumibles-frontend
-    depends_on:
-      - api
-    ports:
-      - "8085:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-    configs:
-      - source: nginx_config
-        target: /etc/nginx/conf.d/default.conf
-    restart: unless-stopped
-    networks:
-      - glpi_net
+  frontend:
+      image: nginx:alpine
+      container_name: glpi-consumibles-frontend
+      depends_on:
+        - api
+      ports:
+        - "8085:80"
+      volumes:
+        - ./frontend:/usr/share/nginx/html:ro
+      configs:
+        - source: nginx_config
+          target: /etc/nginx/conf.d/default.conf
+      restart: unless-stopped
+      networks:
+        - glpi_net
 
 configs:
 nginx_config:
@@ -36,4 +36,4 @@ nginx_config:
 
 networks:
 glpi_net:
-  driver: bridge
+driver: bridge
