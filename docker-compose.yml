@@ -11,7 +11,7 @@ services:
       PORT: "3000"
     restart: unless-stopped
     expose:
-      - "3000"
+      - "3100"
 
   frontend:
     image: nginx:alpine
