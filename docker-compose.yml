@@ -30,10 +30,10 @@ services:
       networks:
         - glpi_net
 
-configs:
-nginx_config:
-  file: ./nginx/default.conf
+  configs:
+  nginx_config:
+    file: ./nginx/default.conf
 
-networks:
-glpi_net:
-driver: bridge
+  networks:
+  glpi_net:
+  driver: bridge
