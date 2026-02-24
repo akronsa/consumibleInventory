@@ -6,12 +6,12 @@ services:
     container_name: glpi-consumibles-api
     environment:
       GLPI_BASE_URL: "https://glpi.akron.com.ar"
-      GLPI_APP_TOKEN: "PONER_APP_TOKEN"
-      GLPI_USER_TOKEN: "PONER_USER_TOKEN"
+      GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:?GLPI_APP_TOKEN not set}
+      GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN not set}
       PORT: "3000"
     restart: unless-stopped
     expose:
-      - "3100"
+      - "3000"
 
   frontend:
     image: nginx:alpine
