@@ -34,7 +34,7 @@
 <div class="card row">
     <label>
       Barcode (escaneá aquí)
-      <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" />
+      <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" inputmode="none"/>
     </label>
     <div id="productName" class="ok" style="margin-top: 5px; min-height: 1.2em;"></div>
     
@@ -168,13 +168,11 @@
         // 1. Mostramos el nombre del modelo
         $("productName").textContent = `Consumible: ${model.name}`;
         setMsg("Modelo detectado. Listo para asignar.", "small");
-
-        // 2. IMPORTANTE: Borramos el código del campo sin asignar
-        $("barcode").value = ""; 
         
-        // 3. Guardamos el código internamente para cuando se pulse "Asignar"
-        // Podemos usar un atributo data o una variable global
         $("barcode").dataset.lastScanned = code;
+        // 2. IMPORTANTE: Borramos el código del campo sin asignar
+        
+        $("barcode").value = "";       
 
       } else {
         $("productName").textContent = "Código no reconocido";
