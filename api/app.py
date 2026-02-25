@@ -100,11 +100,26 @@ def glpi_request(
 def normalize_barcode(s: Any) -> str:
     return str(s or "").strip()
 
+# def is_available(c: Dict[str, Any]) -> bool:
+#     return (
+#         c.get("date_out") is None
+#         and (c.get("itemtype") is None or c.get("itemtype") == "")
+#         and str(c.get("items_id", "0")) in ("0", "0.0")
+#     )
 def is_available(c: Dict[str, Any]) -> bool:
+    # 1. date_out debe ser None o estar vacío
+    date_out = c.get("date_out")
+    
+    # 2. items_id debe ser 0, None o "0"
+    items_id = c.get("items_id")
+    
+    # 3. itemtype debe ser None o vacío
+    itemtype = c.get("itemtype")
+
     return (
-        c.get("date_out") is None
-        and (c.get("itemtype") is None or c.get("itemtype") == "")
-        and str(c.get("items_id", "0")) in ("0", "0.0")
+        (date_out is None or date_out == "") and
+        (items_id is None or str(items_id) in ("0", "0.0", "")) and
+        (itemtype is None or itemtype == "")
     )
 
 def today_yyyy_mm_dd() -> str:
