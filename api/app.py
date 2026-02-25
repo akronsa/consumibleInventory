@@ -193,7 +193,7 @@ def consume(req: ConsumeRequest):
             )
             # --- Contar stock restante ---
             # Volvemos a pedir los consumibles para ver cuántos quedan disponibles
-            data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-200"})
+            data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
             all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
             # Contamos los que NO tienen date_out y no están asignados
             remaining = len([i for i in all_items if is_available(i)])
