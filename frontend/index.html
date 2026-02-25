@@ -31,11 +31,13 @@
     <ul id="userList" hidden></ul>
   </div>
 
-  <div class="card row">
+<div class="card row">
     <label>
       Barcode (escaneá aquí)
       <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" />
     </label>
+    <div id="productName" class="ok" style="margin-top: 5px; min-height: 1.2em;"></div>
+    
     <button id="sendBtn">Asignar consumible</button>
     <div id="msg" class="small"></div>
   </div>
@@ -148,6 +150,31 @@
         e.preventDefault();
         consume();
       }
+    });
+
+    $("barcode").addEventListener("input", () => {
+      const code = $("barcode").value.trim();
+      clearTimeout(barcodeDebounce);
+      
+      if (code.length < 3) {
+        $("productName").textContent = "";
+        return;
+      }
+
+      barcodeDebounce = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
+          if (r.ok) {
+            const model = await r.json();
+            $("productName").textContent = `Producto: ${model.name}`;
+            setMsg(""); // Limpia mensajes de error previos
+          } else {
+            $("productName").textContent = "";
+          }
+        } catch (e) {
+          console.error("Error buscando modelo:", e);
+        }
+      }, 250); // 250ms es suficiente para detectar el final de un escaneo
     });
 
     // UX: foco directo en barcode al cargar

@@ -202,3 +202,11 @@ def consume(req: ConsumeRequest):
             continue
 
     raise HTTPException(status_code=409, detail={"error": "No se pudo asignar (concurrencia)", "last": last_err})
+
+@app.get("/api/model/{barcode}")
+def get_model_info(barcode: str):
+    barcode = normalize_barcode(barcode)
+    model = get_model_by_ref(barcode)
+    if not model:
+        raise HTTPException(status_code=404, detail="Modelo no encontrado")
+    return model
