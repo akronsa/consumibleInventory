@@ -140,6 +140,13 @@
       $("productName").textContent = ""; // Limpiamos el nombre tras el éxito
       $("barcode").dataset.lastScanned = ""; // Limpiamos el backup
       $("barcode").blur();
+
+      setTimeout(() => {
+        const bc = $("barcode");
+        bc.value = ""; // Nos aseguramos de que esté vacío
+        bc.focus();    // Devolvemos el foco silenciosamente
+        // Al tener inputmode="none", el foco volverá pero el teclado NO se abrirá
+      }, 1000);
     }
 
     // Botón
@@ -186,7 +193,7 @@
 });
 
     // UX: foco directo en barcode al cargar
-    window.addEventListener("load", () => $("userPick").focus());
+    window.addEventListener("load", () => $("userSearch").focus());
   </script>
 </body>
 </html>
