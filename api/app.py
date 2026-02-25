@@ -173,7 +173,7 @@ def consume(req: ConsumeRequest):
 
     model_id = model["modelId"]
 
-    data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-200"})
+    data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
     items: List[Dict[str, Any]] = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
 
     candidates = [c for c in items if is_available(c)]
