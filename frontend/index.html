@@ -135,10 +135,10 @@
         return;
       }
 
-      setMsg(`Asignado con éxito: ${j.model?.name}`, "ok");
+      setMsg(`OK: ${j.model?.name || "Modelo"} (ref ${j.model?.ref}) → consumible ID ${j.consumable_id}`, "ok");
       $("productName").textContent = ""; // Limpiamos el nombre tras el éxito
       $("barcode").dataset.lastScanned = ""; // Limpiamos el backup
-      $("barcode").focus();
+      $("barcode").blur();
     }
 
     // Botón
