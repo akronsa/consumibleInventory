@@ -24,8 +24,8 @@
 
   <div class="card row">
     <label>
-      Usuario
-      <input id="userSearch" placeholder="Escribí username" autocomplete="off" />
+      Usuario (buscar)
+      <input id="userSearch" placeholder="Escribí username (ej: jcaamano)" autocomplete="off" />
     </label>
     <div id="userPick" class="small">Sin usuario seleccionado.</div>
     <ul id="userList" hidden></ul>
@@ -33,7 +33,7 @@
 
   <div class="card row">
     <label>
-      Codigo de barras
+      Barcode (escaneá aquí)
       <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" inputmode="none" />
     </label>
     <div id="productName"></div>
@@ -43,9 +43,11 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
+
     let selectedUser = null;
     let debounce = null;
     let barcodeDebounce = null;
+    let lastCodeScanned = "";
 
     function setMsg(text, cls="small") {
       const el = $("msg");
@@ -55,37 +57,74 @@
 
     function setUser(user) {
       selectedUser = user;
-      $("userPick").innerHTML = user ? `Seleccionado: <b>${user.name}</b>` : "Sin usuario seleccionado.";
+      $("userPick").innerHTML = user
+        ? `Seleccionado: <b>${user.name}</b> (ID ${user.id})`
+        : "Sin usuario seleccionado.";
       $("userList").hidden = true;
-      resetBarcodeField();
+      $("barcode").value = "";
+      $("barcode").focus();
     }
 
-    // Función centralizada para dejar el campo listo
-    function resetBarcodeField() {
-      const bc = $("barcode");
-      bc.value = "";
-      bc.dataset.lastScanned = "";
-      bc.focus(); 
-    }
-
-    // Detección de escaneo
+    // Detección automática de producto al escanear
     $("barcode").addEventListener("input", () => {
       const code = $("barcode").value.trim();
+      if (code.length < 3) return;
+
+      lastCodeScanned = code;
+
       clearTimeout(barcodeDebounce);
-      
       barcodeDebounce = setTimeout(async () => {
-        if (code.length < 3) return;
         try {
           const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
           if (r.ok) {
             const model = await r.json();
-            $("productName").textContent = `Consumible: ${model.name} (Stock: ${model.stock})`;
-            $("barcode").dataset.lastScanned = code;
-            $("barcode").value = ""; // Limpiamos el texto pero mantenemos el FOCO
+            // Mostramos el nombre y stock disponible si el endpoint lo permite
+            $("productName").textContent = `Listo: ${model.name} ${model.stock !== undefined ? '(Stock: '+model.stock+')' : ''}`;
             setMsg("Listo para asignar", "small");
           }
-        } catch (e) { console.error(e); }
-      }, 150); // Reducimos el tiempo para mayor agilidad
+        } catch (e) {
+          console.error(e);
+        }
+      }, 150);
+    });
+
+    async function fetchUsers(q) {
+      const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    }
+
+    $("userSearch").addEventListener("input", () => {
+      const q = $("userSearch").value.trim();
+      clearTimeout(debounce);
+
+      if (q.length < 2) {
+        $("userList").hidden = true;
+        return;
+      }
+
+      debounce = setTimeout(async () => {
+        try {
+          const data = await fetchUsers(q);
+          const list = data.results || [];
+          const ul = $("userList");
+          ul.innerHTML = "";
+          if (list.length === 0) {
+            ul.hidden = true;
+            return;
+          }
+          list.forEach(u => {
+            const li = document.createElement("li");
+            li.textContent = `${u.name} (ID ${u.id})`;
+            li.addEventListener("click", () => setUser(u));
+            ul.appendChild(li);
+          });
+          ul.hidden = false;
+        } catch (e) {
+          console.error(e);
+          $("userList").hidden = true;
+        }
+      }, 300);
     });
 
     async function consume() {
@@ -95,12 +134,16 @@
         return;
       }
 
-      // Obtenemos el código y LIMPIAMOS el campo inmediatamente
-      // para que esté listo para el segundo escaneo aunque la API tarde
-      const code = $("barcode").value.trim();
-      if (!code) return;
+      // Tomamos el código del input o de la variable guardada y limpiamos inmediatamente
+      const code = $("barcode").value.trim() || lastCodeScanned;
+      if (!code) {
+        setMsg("Escaneá un barcode.", "err");
+        $("barcode").focus();
+        return;
+      }
 
       $("barcode").value = "";
+      lastCodeScanned = "";
       setMsg("Procesando...", "small");
 
       try {
@@ -113,52 +156,44 @@
         const j = await r.json();
 
         if (!r.ok) {
-          setMsg(j.detail || "Error", "err");
+          const err = j?.detail || j?.error || "Error al asignar";
+          setMsg(typeof err === "string" ? err : JSON.stringify(err), "err");
         } else {
-          // Éxito: El mensaje desaparece tras 3 segundos para no ensuciar
-          setMsg(`OK: ${j.model?.name} asignado a ${selectedUser.name}`, "ok");
-          setTimeout(() => { if($("msg").className === "ok") setMsg(""); }, 3000);
+          const stockMsg = j.remaining !== undefined ? ` (Quedan: ${j.remaining})` : "";
+          setMsg(`OK: ${j.model?.name || "Asignado"}${stockMsg}`, "ok");
+          
+          // El mensaje de éxito se borra solo para dejar espacio al siguiente escaneo
+          setTimeout(() => { 
+            if($("msg").className === "ok") setMsg(""); 
+          }, 3000);
         }
       } catch (e) {
         setMsg("Error de conexión", "err");
       } finally {
-        // PASE LO QUE PASE, el foco vuelve al barcode
+        // Aseguramos que el foco vuelva siempre al campo de barcode
         $("barcode").focus();
+        $("productName").textContent = "";
       }
     }
 
     $("sendBtn").addEventListener("click", consume);
 
-    // Si el usuario hace click en cualquier lado, devolvemos el foco al barcode
+    // Capturamos el Enter del scanner para procesar sin recargar la página
+    $("barcode").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        consume();
+      }
+    });
+
+    // Si el usuario toca la pantalla fuera de un input, devolvemos el foco al barcode
     document.addEventListener("click", (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON" && e.target.tagName !== "LI") {
+      if (e.target.tagName !== "INPUT" && e.target.tagName !== "LI" && e.target.tagName !== "BUTTON") {
         $("barcode").focus();
       }
     });
 
     window.addEventListener("load", () => $("barcode").focus());
-
-    // Buscador de usuarios (se mantiene igual)
-    $("userSearch").addEventListener("input", () => {
-      const q = $("userSearch").value.trim();
-      clearTimeout(debounce);
-      if (q.length < 2) { $("userList").hidden = true; return; }
-      debounce = setTimeout(async () => {
-        const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
-        if (r.ok) {
-          const data = await r.json();
-          const ul = $("userList");
-          ul.innerHTML = "";
-          (data.results || []).forEach(u => {
-            const li = document.createElement("li");
-            li.textContent = `${u.name}`;
-            li.addEventListener("click", () => setUser(u));
-            ul.appendChild(li);
-          });
-          ul.hidden = false;
-        }
-      }, 300);
-    });
   </script>
 </body>
 </html>
