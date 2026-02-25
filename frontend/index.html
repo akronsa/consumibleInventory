@@ -25,7 +25,7 @@
   <div class="card row">
     <label>
       Usuario (buscar)
-      <input id="userSearch" placeholder="Escribí username (ej: jcaamano)" autocomplete="off" />
+      <input id="userSearch" placeholder="Escribí username" autocomplete="off" />
     </label>
     <div id="userPick" class="small">Sin usuario seleccionado.</div>
     <ul id="userList" hidden></ul>
@@ -43,7 +43,6 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-
     let selectedUser = null;
     let debounce = null;
     let barcodeDebounce = null;
@@ -56,14 +55,20 @@
 
     function setUser(user) {
       selectedUser = user;
-      $("userPick").innerHTML = user
-        ? `Seleccionado: <b>${user.name}</b> (ID ${user.id})`
-        : "Sin usuario seleccionado.";
+      $("userPick").innerHTML = user ? `Seleccionado: <b>${user.name}</b>` : "Sin usuario seleccionado.";
       $("userList").hidden = true;
-      $("barcode").focus();
+      resetBarcodeField();
     }
 
-    // --- NUEVO: Detección automática de producto ---
+    // Función centralizada para dejar el campo listo
+    function resetBarcodeField() {
+      const bc = $("barcode");
+      bc.value = "";
+      bc.dataset.lastScanned = "";
+      bc.focus(); 
+    }
+
+    // Detección de escaneo
     $("barcode").addEventListener("input", () => {
       const code = $("barcode").value.trim();
       clearTimeout(barcodeDebounce);
@@ -76,81 +81,80 @@
             const model = await r.json();
             $("productName").textContent = `Consumible: ${model.name} (Stock: ${model.stock})`;
             $("barcode").dataset.lastScanned = code;
-            $("barcode").value = ""; // Limpiamos para el próximo escaneo
+            $("barcode").value = ""; // Limpiamos el texto pero mantenemos el FOCO
             setMsg("Listo para asignar", "small");
           }
         } catch (e) { console.error(e); }
-      }, 300);
-    });
-
-    async function fetchUsers(q) {
-      const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
-      if (!r.ok) throw new Error(await r.text());
-      return r.json();
-    }
-
-    $("userSearch").addEventListener("input", () => {
-      const q = $("userSearch").value.trim();
-      clearTimeout(debounce);
-      if (q.length < 2) { $("userList").hidden = true; return; }
-      debounce = setTimeout(async () => {
-        try {
-          const data = await fetchUsers(q);
-          const list = data.results || [];
-          const ul = $("userList");
-          ul.innerHTML = "";
-          if (list.length === 0) { ul.hidden = true; return; }
-          list.forEach(u => {
-            const li = document.createElement("li");
-            li.textContent = `${u.name} (ID ${u.id})`;
-            li.addEventListener("click", () => setUser(u));
-            ul.appendChild(li);
-          });
-          ul.hidden = false;
-        } catch (e) { $("userList").hidden = true; }
-      }, 300);
+      }, 150); // Reducimos el tiempo para mayor agilidad
     });
 
     async function consume() {
       if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
-      
       const code = $("barcode").dataset.lastScanned;
       if (!code) { setMsg("Escaneá un código válido primero.", "err"); return; }
 
       setMsg("Procesando...", "small");
 
-      const r = await fetch("/api/consume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
-      });
+      try {
+        const r = await fetch("/api/consume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
+        });
 
-      const text = await r.text();
-      let j = null;
-      try { j = text ? JSON.parse(text) : null; } catch {}
+        const j = await r.json();
 
-      if (!r.ok) {
-        setMsg(j?.detail || "Error al asignar", "err");
-        return;
+        if (!r.ok) {
+          setMsg(j.detail || "Error al asignar", "err");
+          resetBarcodeField();
+          return;
+        }
+
+        // ÉXITO
+        setMsg(`OK: ${j.model?.name}. Quedan: ${j.remaining ?? "?"}`, "ok");
+        $("productName").textContent = "";
+        
+        // El truco: Limpiamos y aseguramos el foco inmediatamente
+        resetBarcodeField();
+
+      } catch (e) {
+        setMsg("Error de conexión", "err");
+        resetBarcodeField();
       }
-
-      // ÉXITO
-      const stock = j.remaining !== undefined ? j.remaining : "?";
-      setMsg(`OK: ${j.model?.name}. Quedan: ${stock}`, "ok");
-      
-      $("productName").textContent = "";
-      $("barcode").dataset.lastScanned = "";
-      $("barcode").value = "";
-      
-      // QUITAMOS FOCO para cerrar teclado y devolvemos tras 1 seg
-      $("barcode").blur();
-      setTimeout(() => {
-          $("barcode").focus();
-      }, 1000);
     }
 
     $("sendBtn").addEventListener("click", consume);
+
+    // Si el usuario hace click en cualquier lado, devolvemos el foco al barcode
+    document.addEventListener("click", (e) => {
+      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON" && e.target.tagName !== "LI") {
+        $("barcode").focus();
+      }
+    });
+
     window.addEventListener("load", () => $("barcode").focus());
+
+    // Buscador de usuarios (se mantiene igual)
+    $("userSearch").addEventListener("input", () => {
+      const q = $("userSearch").value.trim();
+      clearTimeout(debounce);
+      if (q.length < 2) { $("userList").hidden = true; return; }
+      debounce = setTimeout(async () => {
+        const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+        if (r.ok) {
+          const data = await r.json();
+          const ul = $("userList");
+          ul.innerHTML = "";
+          (data.results || []).forEach(u => {
+            const li = document.createElement("li");
+            li.textContent = `${u.name}`;
+            li.addEventListener("click", () => setUser(u));
+            ul.appendChild(li);
+          });
+          ul.hidden = false;
+        }
+      }, 300);
+    });
   </script>
 </body>
 </html>
