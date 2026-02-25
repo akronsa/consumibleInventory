@@ -191,11 +191,19 @@ def consume(req: ConsumeRequest):
                 f"/ConsumableItem/{model_id}/Consumable/{consumable_id}",
                 json_body={"input": {"items_id": str(req.user_id), "itemtype": "User", "date_out": date_out}},
             )
+            # --- Contar stock restante ---
+            # Volvemos a pedir los consumibles para ver cuántos quedan disponibles
+            data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-200"})
+            all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
+            # Contamos los que NO tienen date_out y no están asignados
+            remaining = len([i for i in all_items if is_available(i)])
+            # -------------------------------------------
             return {
                 "ok": True,
                 "model": {"id": model_id, "name": model.get("name"), "ref": model.get("ref")},
                 "consumable_id": consumable_id,
                 "date_out": date_out,
+                "remaining": remaining,
             }
         except HTTPException as e:
             last_err = e.detail

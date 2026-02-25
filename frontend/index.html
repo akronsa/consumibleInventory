@@ -134,8 +134,9 @@
         setMsg(j?.detail || "Error al asignar", "err");
         return;
       }
+      const remaining = j.remaining !== undefined ? j.remaining : "?";
 
-      setMsg(`OK: ${j.model?.name || "Modelo"} (ref ${j.model?.ref}) → consumible ID ${j.consumable_id}`, "ok");
+      setMsg(`OK: ${j.model?.name}. Quedan: ${remaining} unidades.`, "ok");
       $("productName").textContent = ""; // Limpiamos el nombre tras el éxito
       $("barcode").dataset.lastScanned = ""; // Limpiamos el backup
       $("barcode").blur();
