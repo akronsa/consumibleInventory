@@ -89,10 +89,18 @@
     });
 
     async function consume() {
-      if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
-      const code = $("barcode").dataset.lastScanned;
-      if (!code) { setMsg("Escaneá un código válido primero.", "err"); return; }
+      if (!selectedUser) {
+        setMsg("Seleccioná un usuario primero.", "err");
+        $("userSearch").focus();
+        return;
+      }
 
+      // Obtenemos el código y LIMPIAMOS el campo inmediatamente
+      // para que esté listo para el segundo escaneo aunque la API tarde
+      const code = $("barcode").value.trim();
+      if (!code) return;
+
+      $("barcode").value = "";
       setMsg("Procesando...", "small");
 
       try {
@@ -105,21 +113,17 @@
         const j = await r.json();
 
         if (!r.ok) {
-          setMsg(j.detail || "Error al asignar", "err");
-          resetBarcodeField();
-          return;
+          setMsg(j.detail || "Error", "err");
+        } else {
+          // Éxito: El mensaje desaparece tras 3 segundos para no ensuciar
+          setMsg(`OK: ${j.model?.name} asignado a ${selectedUser.name}`, "ok");
+          setTimeout(() => { if($("msg").className === "ok") setMsg(""); }, 3000);
         }
-
-        // ÉXITO
-        setMsg(`OK: ${j.model?.name}. Quedan: ${j.remaining ?? "?"}`, "ok");
-        $("productName").textContent = "";
-        
-        // El truco: Limpiamos y aseguramos el foco inmediatamente
-        resetBarcodeField();
-
       } catch (e) {
         setMsg("Error de conexión", "err");
-        resetBarcodeField();
+      } finally {
+        // PASE LO QUE PASE, el foco vuelve al barcode
+        $("barcode").focus();
       }
     }
 
