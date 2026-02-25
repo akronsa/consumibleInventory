@@ -47,6 +47,7 @@
 
     let selectedUser = null;
     let debounce = null;
+    let barcodeDebounce = null;
 
     function setMsg(text, cls="small") {
       const el = $("msg");
@@ -109,14 +110,15 @@
         return;
       }
 
-      const code = $("barcode").value.trim();
+      // Usamos el código que guardamos al escanear
+      const code = $("barcode").dataset.lastScanned;
+      
       if (!code) {
-        setMsg("Escaneá un barcode.", "err");
-        $("barcode").focus();
+        setMsg("Primero escaneá un código válido.", "err");
         return;
       }
 
-      setMsg("Procesando...", "small");
+      setMsg("Procesando asignación...", "small");
 
       const r = await fetch("/api/consume", {
         method: "POST",
@@ -129,15 +131,13 @@
       try { j = text ? JSON.parse(text) : null; } catch {}
 
       if (!r.ok) {
-        const err = j?.detail || j?.error || text || "Error";
-        setMsg(typeof err === "string" ? err : JSON.stringify(err), "err");
-        $("barcode").select();
-        $("barcode").focus();
+        setMsg(j?.detail || "Error al asignar", "err");
         return;
       }
 
-      setMsg(`OK: ${j.model?.name || "Modelo"} (ref ${j.model?.ref}) → consumible ID ${j.consumable_id}`, "ok");
-      $("barcode").value = "";
+      setMsg(`Asignado con éxito: ${j.model?.name}`, "ok");
+      $("productName").textContent = ""; // Limpiamos el nombre tras el éxito
+      $("barcode").dataset.lastScanned = ""; // Limpiamos el backup
       $("barcode").focus();
     }
 
@@ -153,29 +153,38 @@
     });
 
     $("barcode").addEventListener("input", () => {
-      const code = $("barcode").value.trim();
-      clearTimeout(barcodeDebounce);
-      
-      if (code.length < 3) {
-        $("productName").textContent = "";
-        return;
-      }
+  const code = $("barcode").value.trim();
+  clearTimeout(barcodeDebounce);
+  
+  // Esperamos a que el scanner termine de "escribir" (ej: 300ms)
+  barcodeDebounce = setTimeout(async () => {
+    if (code.length < 3) return;
 
-      barcodeDebounce = setTimeout(async () => {
-        try {
-          const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
-          if (r.ok) {
-            const model = await r.json();
-            $("productName").textContent = `Producto: ${model.name}`;
-            setMsg(""); // Limpia mensajes de error previos
-          } else {
-            $("productName").textContent = "";
-          }
-        } catch (e) {
-          console.error("Error buscando modelo:", e);
-        }
-      }, 250); // 250ms es suficiente para detectar el final de un escaneo
-    });
+    try {
+      const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
+      if (r.ok) {
+        const model = await r.json();
+        
+        // 1. Mostramos el nombre del modelo
+        $("productName").textContent = `Consumible: ${model.name}`;
+        setMsg("Modelo detectado. Listo para asignar.", "small");
+
+        // 2. IMPORTANTE: Borramos el código del campo sin asignar
+        $("barcode").value = ""; 
+        
+        // 3. Guardamos el código internamente para cuando se pulse "Asignar"
+        // Podemos usar un atributo data o una variable global
+        $("barcode").dataset.lastScanned = code;
+
+      } else {
+        $("productName").textContent = "Código no reconocido";
+        $("barcode").select();
+      }
+    } catch (e) {
+      console.error("Error:", e);
+    }
+  }, 300); 
+});
 
     // UX: foco directo en barcode al cargar
     window.addEventListener("load", () => $("barcode").focus());
