@@ -5,6 +5,7 @@ import threading
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+from requests.adapters import HTTPAdapter
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -26,6 +27,12 @@ if not API_KEY:
     raise RuntimeError("Falta API_KEY")
 
 API = f"{GLPI_BASE_URL}/apirest.php"
+
+# ---------- HTTP session (connection pooling) ----------
+_http_session = requests.Session()
+_adapter = HTTPAdapter(pool_connections=1, pool_maxsize=10, max_retries=0)
+_http_session.mount("https://", _adapter)
+_http_session.mount("http://", _adapter)
 
 # ---------- Auth ----------
 def require_api_key(x_api_key: str = Header(...)):
@@ -57,7 +64,7 @@ def _init_session() -> str:
         "App-Token": GLPI_APP_TOKEN,
         "Authorization": f"user_token {GLPI_USER_TOKEN}",
     }
-    r = requests.post(url, headers=headers, timeout=20)
+    r = _http_session.post(url, headers=headers, timeout=20)
     if not r.ok:
         raise RuntimeError(f"initSession failed {r.status_code}: {r.text}")
 
@@ -100,7 +107,7 @@ def glpi_request(
             headers["Content-Type"] = "application/json"
         if range_header:
             headers["Range"] = range_header
-        return requests.request(method, url, headers=headers, params=params, json=json_body, timeout=30)
+        return _http_session.request(method, url, headers=headers, params=params, json=json_body, timeout=30)
 
     token = get_session_token()
     r = do(token)
