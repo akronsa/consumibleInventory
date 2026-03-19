@@ -17,7 +17,7 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 WORKDIR /app
 COPY app.py /app/app.py
 
-RUN pip install --no-cache-dir fastapi uvicorn requests
+RUN pip install --no-cache-dir fastapi uvicorn requests slowapi
 
 EXPOSE 3000
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3000"]

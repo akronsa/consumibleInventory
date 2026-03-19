@@ -6,6 +6,7 @@ services:
       GLPI_BASE_URL: "https://glpi.akron.com.ar"
       GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:?GLPI_APP_TOKEN not set}
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN not set}
+      API_KEY: ${API_KEY:?API_KEY not set}
       PORT: "3000"
     restart: unless-stopped
     expose:
@@ -14,16 +15,16 @@ services:
       - glpi_net
 
   frontend:
-    image: nginx:alpine
+    build: ./nginx
     container_name: glpi-consumibles-frontend
     depends_on:
       - api
+    environment:
+      API_KEY: ${API_KEY:?API_KEY not set}
     ports:
       - "8085:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
-      # Importante: Usamos la ruta relativa desde la raíz del repo
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
     networks:
       - glpi_net
