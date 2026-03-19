@@ -50,27 +50,10 @@
       text-decoration: none;
     }
 
-    .logo-mark {
-      width: 36px;
+    .logo-img {
       height: 36px;
-      background: var(--red);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .logo-mark svg {
-      width: 22px;
-      height: 22px;
-      fill: white;
-    }
-
-    .logo-text {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--white);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      width: auto;
+      display: block;
     }
 
     .header-title {
@@ -397,13 +380,7 @@
 
   <header>
     <a class="logo" href="#">
-      <div class="logo-mark">
-        <!-- Simple "A" icon placeholder — reemplazar con el logo real si se quiere -->
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2 L22 20 H2 Z M12 7 L6.5 17 H17.5 Z" fill-rule="evenodd"/>
-        </svg>
-      </div>
-      <span class="logo-text">Akron</span>
+      <img class="logo-img" src="/logo.png" alt="Akron" />
     </a>
     <span class="header-title">Gestión de consumibles</span>
   </header>
