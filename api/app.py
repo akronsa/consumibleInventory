@@ -4,12 +4,20 @@ import time
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
+import logging
 import requests
 from requests.adapters import HTTPAdapter
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+log = logging.getLogger("consumibles")
 
 GLPI_BASE_URL = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
 GLPI_APP_TOKEN = os.environ.get("GLPI_APP_TOKEN", "")
@@ -73,14 +81,19 @@ def _init_session() -> str:
     token = j.get("session_token") or j.get("sessionToken")
     if not token:
         raise RuntimeError(f"initSession: no session_token en respuesta: {j}")
+    log.info("GLPI session iniciada")
     return token
 
 def get_session_token(force_refresh: bool = False) -> str:
     global _session_token, _session_obtained_at
     with _session_lock:
         now = time.time()
-        if (not force_refresh and _session_token and (now - _session_obtained_at) < SESSION_MAX_AGE_SEC):
+        if not force_refresh and _session_token and (now - _session_obtained_at) < SESSION_MAX_AGE_SEC:
             return _session_token
+        # Si otro thread ya renovó mientras esperábamos el lock, reusar su token
+        if force_refresh and _session_token and (now - _session_obtained_at) < 10:
+            return _session_token
+        log.info("Renovando session GLPI (force=%s)", force_refresh)
         token = _init_session()
         _session_token = token
         _session_obtained_at = now
@@ -118,7 +131,8 @@ def glpi_request(
         r = do(token2)
 
     if not r.ok:
-        raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
+        log.error("GLPI error %s: %s", r.status_code, r.text[:200])
+    raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
 
     data = r.json() if r.text else None
     headers_out = {k.lower(): v for k, v in r.headers.items()}
@@ -227,6 +241,7 @@ def consume(request: Request, req: ConsumeRequest):
 
         candidates = [c for c in items if is_available(c)]
         if not candidates:
+            log.warning("Sin stock: model=%s id=%s", model.get("name"), model_id)
             raise HTTPException(status_code=409, detail={"error": "Sin stock", "modelId": model_id, "modelName": model.get("name")})
 
         date_out = today_yyyy_mm_dd()
@@ -243,6 +258,10 @@ def consume(request: Request, req: ConsumeRequest):
                 data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
                 all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
                 remaining = len([i for i in all_items if is_available(i)])
+                log.info(
+                    "CONSUME user_id=%s barcode=%s model=%s consumable_id=%s remaining=%s",
+                    req.user_id, barcode, model.get("name"), consumable_id, remaining,
+                )
                 return {
                     "ok": True,
                     "model": {"id": model_id, "name": model.get("name"), "ref": model.get("ref")},
