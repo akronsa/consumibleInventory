@@ -294,6 +294,54 @@
 
     @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
+    /* ── Consume button ── */
+    .btn-consume {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      margin-top: 12px;
+      background: var(--red);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      border: none;
+      cursor: pointer;
+      transition: background .3s ease, opacity .3s ease;
+    }
+
+    .btn-consume:hover:not(:disabled) { background: var(--dark); }
+
+    .btn-consume:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-consume .btn-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .btn-consume.loading .btn-spinner { display: block; }
+    .btn-consume.loading .btn-label { opacity: 0.7; }
+
+    /* ── Processing overlay en inputs ── */
+    input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     /* ── Footer ── */
     footer {
       text-align: center;
@@ -303,6 +351,36 @@
       color: #b1bec5;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      header {
+        padding: 0 20px;
+        height: 56px;
+      }
+
+      .header-title { display: none; }
+
+      main {
+        padding: 28px 16px;
+      }
+
+      .page-title { font-size: 30px; }
+      .page-subtitle { font-size: 15px; margin-bottom: 28px; }
+
+      .card { padding: 22px 18px; }
+
+      input[type="text"], input[type="search"] {
+        font-size: 16px;
+        padding: 16px 14px;
+      }
+
+      li { padding: 16px 14px; font-size: 17px; }
+
+      .btn-consume { padding: 18px; font-size: 15px; }
+
+      .msg { font-size: 14px; }
     }
   </style>
 </head>
@@ -345,7 +423,7 @@
     <div class="card">
       <div class="card-label">Código de producto</div>
       <div class="input-wrap">
-        <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" inputmode="none" />
+        <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" />
         <div id="spinner" class="spinner"></div>
       </div>
       <div id="productInfo" class="product-info">
@@ -355,6 +433,10 @@
       <div class="msg-area">
         <div id="msg" class="msg"></div>
       </div>
+      <button id="btnConsume" class="btn-consume" onclick="consume()">
+        <div class="btn-spinner"></div>
+        <span class="btn-label">Registrar salida</span>
+      </button>
     </div>
   </main>
 
@@ -424,6 +506,16 @@
       }, 150);
     });
 
+    function setProcessing(on) {
+      const btn = $("btnConsume");
+      const barcodeEl = $("barcode");
+      const userEl = $("userSearch");
+      btn.disabled = on;
+      barcodeEl.disabled = on;
+      userEl.disabled = on;
+      btn.classList.toggle("loading", on);
+    }
+
     // Consumo
     async function consume() {
       if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
@@ -434,6 +526,7 @@
       lastCodeScanned = "";
       setMsg("Procesando...", "info");
       setProduct(null);
+      setProcessing(true);
 
       try {
         const r = await fetch("/api/consume", {
@@ -453,6 +546,7 @@
       } catch (e) {
         setMsg("Error de conexión", "err");
       } finally {
+        setProcessing(false);
         $("barcode").focus();
       }
     }
@@ -488,6 +582,11 @@
     document.addEventListener("click", (e) => {
       if (!["INPUT", "LI"].includes(e.target.tagName)) $("barcode").focus();
     });
+
+    // En desktop suprimir teclado virtual (hay escáner físico); en mobile mostrarlo
+    if (window.matchMedia("(pointer: fine)").matches) {
+      $("barcode").setAttribute("inputmode", "none");
+    }
 
     window.addEventListener("load", () => $("barcode").focus());
   </script>
