@@ -3,40 +3,362 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Consumibles GLPI</title>
+  <title>Consumibles — Akron</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: system-ui, sans-serif; margin: 16px; }
-    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-    input { font-size: 18px; padding: 10px; width: 100%; box-sizing: border-box; }
-    .row { display: grid; gap: 8px; }
-    .small { font-size: 14px; color: #666; }
-    .ok { color: #0a7; font-weight: 600; }
-    .err { color: #c00; font-weight: 600; }
-    ul { list-style: none; padding: 0; margin: 6px 0 0; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
-    li { padding: 10px; border-top: 1px solid #eee; background: #fff; cursor: pointer; }
-    #productName { color: #0a7; font-weight: bold; margin-top: 5px; min-height: 1.2em; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:      #ED1C24;
+      --dark:     #58595B;
+      --mid:      #7f8284;
+      --light:    #f3f3f3;
+      --border:   #e0e0e0;
+      --white:    #ffffff;
+      --shadow:   0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Barlow Condensed', system-ui, sans-serif;
+      font-weight: 500;
+      background: var(--light);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--dark);
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-mark svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+    }
+
+    .page-title {
+      font-size: 42px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--dark);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .page-subtitle {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--mid);
+      text-align: center;
+      margin-bottom: 40px;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 16px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--mid);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 14px;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="search"] {
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--dark);
+      background: var(--light);
+      border: 2px solid transparent;
+      padding: 14px 16px;
+      width: 100%;
+      outline: none;
+      transition: border-color .3s ease, background .3s ease;
+    }
+
+    input[type="text"]:focus, input[type="search"]:focus {
+      border-color: var(--red);
+      background: var(--white);
+    }
+
+    input::placeholder { color: #b1bec5; }
+
+    /* ── User dropdown ── */
+    ul {
+      list-style: none;
+      border: 2px solid var(--border);
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    li {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--dark);
+      transition: background .2s ease, color .2s ease;
+    }
+
+    li:first-child { border-top: none; }
+
+    li:hover {
+      background: var(--red);
+      color: var(--white);
+    }
+
+    /* ── User badge ── */
+    .user-badge {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--dark);
+      color: var(--white);
+      padding: 10px 16px;
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .user-badge.visible { display: flex; }
+
+    .user-badge span {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .user-badge-name { font-size: 16px; }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Product info ── */
+    .product-info {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--light);
+      border-left: 3px solid var(--red);
+      padding: 10px 14px;
+      margin-top: 10px;
+    }
+
+    .product-info.visible { display: flex; }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .product-stock {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--mid);
+      white-space: nowrap;
+    }
+
+    /* ── Status message ── */
+    .msg-area {
+      min-height: 44px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .msg {
+      display: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      width: 100%;
+    }
+
+    .msg.visible { display: block; }
+    .msg.ok   { background: #e6f7ef; color: #0a7a4a; border-left: 3px solid #0a7a4a; }
+    .msg.err  { background: #fdecea; color: var(--red); border-left: 3px solid var(--red); }
+    .msg.info { background: var(--light); color: var(--mid); border-left: 3px solid var(--border); }
+
+    /* ── Loading overlay on barcode input ── */
+    .input-wrap { position: relative; }
+
+    .spinner {
+      display: none;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+
+    .spinner.visible { display: block; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #b1bec5;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
-  <h2>Salida de consumibles</h2>
 
-  <div class="card row">
-    <label>
-      Usuario (buscar)
-      <input id="userSearch" placeholder="Escribí username..." autocomplete="off" />
-    </label>
-    <div id="userPick" class="small">Sin usuario seleccionado.</div>
-    <ul id="userList" hidden></ul>
-  </div>
+  <header>
+    <a class="logo" href="#">
+      <div class="logo-mark">
+        <!-- Simple "A" icon placeholder — reemplazar con el logo real si se quiere -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 L22 20 H2 Z M12 7 L6.5 17 H17.5 Z" fill-rule="evenodd"/>
+        </svg>
+      </div>
+      <span class="logo-text">Akron</span>
+    </a>
+    <span class="header-title">Gestión de consumibles</span>
+  </header>
 
-  <div class="card row">
-    <label>
-      Barcode (escaneá para asignar)
-      <input id="barcode" placeholder="Escaneá el código..." autocomplete="off" inputmode="none" />
-    </label>
-    <div id="productName"></div>
-    <div id="msg" class="small"></div>
-  </div>
+  <main>
+    <h1 class="page-title">Salida de consumibles</h1>
+    <p class="page-subtitle">Seleccioná un usuario y escaneá el código del producto</p>
+
+    <!-- Card: Usuario -->
+    <div class="card">
+      <div class="card-label">Usuario</div>
+      <div class="input-wrap">
+        <input id="userSearch" type="search" placeholder="Buscar por nombre de usuario..." autocomplete="off" />
+      </div>
+      <ul id="userList" hidden></ul>
+      <div id="userBadge" class="user-badge">
+        <div class="badge-dot"></div>
+        <div>
+          <span>Usuario seleccionado</span>
+          <div class="user-badge-name" id="userBadgeName"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Barcode -->
+    <div class="card">
+      <div class="card-label">Código de producto</div>
+      <div class="input-wrap">
+        <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" inputmode="none" />
+        <div id="spinner" class="spinner"></div>
+      </div>
+      <div id="productInfo" class="product-info">
+        <span class="product-name" id="productName"></span>
+        <span class="product-stock" id="productStock"></span>
+      </div>
+      <div class="msg-area">
+        <div id="msg" class="msg"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>Akron &copy; 2025 — Sistema interno</footer>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -45,45 +367,73 @@
     let barcodeDebounce = null;
     let lastCodeScanned = "";
 
-    function setMsg(text, cls="small") {
+    function setMsg(text, cls = "") {
       const el = $("msg");
-      el.className = cls;
+      if (!text) {
+        el.className = "msg";
+        el.textContent = "";
+        return;
+      }
+      el.className = `msg visible ${cls}`;
       el.textContent = text;
     }
 
     function setUser(user) {
       selectedUser = user;
-      $("userPick").innerHTML = `Seleccionado: <b>${user.name}</b>`;
+      $("userBadgeName").textContent = user.name;
+      $("userBadge").classList.add("visible");
       $("userList").hidden = true;
+      $("userSearch").value = "";
       $("barcode").focus();
     }
 
-    // Detección de producto (Visual)
+    function setProduct(name, stock) {
+      const info = $("productInfo");
+      if (!name) {
+        info.classList.remove("visible");
+        $("productName").textContent = "";
+        $("productStock").textContent = "";
+        return;
+      }
+      $("productName").textContent = name;
+      $("productStock").textContent = stock !== undefined ? `Stock: ${stock}` : "";
+      info.classList.add("visible");
+    }
+
+    // Detección de producto al escanear
     $("barcode").addEventListener("input", () => {
       const code = $("barcode").value.trim();
-      if (code.length < 3) return;
+      if (code.length < 3) { setProduct(null); return; }
       lastCodeScanned = code;
       clearTimeout(barcodeDebounce);
+      $("spinner").classList.add("visible");
       barcodeDebounce = setTimeout(async () => {
         try {
           const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
           if (r.ok) {
             const model = await r.json();
-            $("productName").textContent = `Listo: ${model.name} ${model.stock !== undefined ? '(Stock: '+model.stock+')' : ''}`;
+            setProduct(model.name, model.stock);
+          } else {
+            setProduct(null);
           }
-        } catch (e) {}
+        } catch (e) {
+          setProduct(null);
+        } finally {
+          $("spinner").classList.remove("visible");
+        }
       }, 150);
     });
 
-    // Lógica de consumo
+    // Consumo
     async function consume() {
       if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
       const code = $("barcode").value.trim() || lastCodeScanned;
-      if (!code) return;
+      if (!code) { setMsg("Escaneá un producto.", "err"); return; }
 
       $("barcode").value = "";
       lastCodeScanned = "";
-      setMsg("Procesando...", "small");
+      setMsg("Procesando...", "info");
+      setProduct(null);
 
       try {
         const r = await fetch("/api/consume", {
@@ -93,21 +443,22 @@
         });
         const j = await r.json();
         if (!r.ok) {
-          setMsg(j.detail || "Error", "err");
+          const detail = j.detail;
+          const errMsg = typeof detail === "object" ? (detail.error || "Error") : (detail || "Error");
+          setMsg(errMsg, "err");
         } else {
-          setMsg(`ASIGNADO: ${j.model?.name} (Quedan: ${j.remaining})`, "ok");
-          setTimeout(() => { if($("msg").className === "ok") setMsg(""); }, 3000);
+          setMsg(`Asignado: ${j.model?.name}  —  Quedan: ${j.remaining}`, "ok");
+          setTimeout(() => { if ($("msg").classList.contains("ok")) setMsg(""); }, 4000);
         }
-      } catch (e) { setMsg("Error de conexión", "err"); }
-      finally { $("barcode").focus(); $("productName").textContent = ""; }
+      } catch (e) {
+        setMsg("Error de conexión", "err");
+      } finally {
+        $("barcode").focus();
+      }
     }
 
-    // El Enter del scanner dispara el proceso
     $("barcode").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        consume();
-      }
+      if (e.key === "Enter") { e.preventDefault(); consume(); }
     });
 
     // Buscador de usuarios
@@ -116,24 +467,26 @@
       clearTimeout(debounce);
       if (q.length < 2) { $("userList").hidden = true; return; }
       debounce = setTimeout(async () => {
-        const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
-        if (r.ok) {
-          const data = await r.json();
-          const ul = $("userList");
-          ul.innerHTML = "";
-          (data.results || []).forEach(u => {
-            const li = document.createElement("li");
-            li.textContent = u.name;
-            li.addEventListener("click", () => setUser(u));
-            ul.appendChild(li);
-          });
-          ul.hidden = false;
-        }
+        try {
+          const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+          if (r.ok) {
+            const data = await r.json();
+            const ul = $("userList");
+            ul.innerHTML = "";
+            (data.results || []).forEach(u => {
+              const li = document.createElement("li");
+              li.textContent = u.name;
+              li.addEventListener("click", () => setUser(u));
+              ul.appendChild(li);
+            });
+            ul.hidden = (data.results || []).length === 0;
+          }
+        } catch (e) {}
       }, 300);
     });
 
     document.addEventListener("click", (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "LI") $("barcode").focus();
+      if (!["INPUT", "LI"].includes(e.target.tagName)) $("barcode").focus();
     });
 
     window.addEventListener("load", () => $("barcode").focus());
