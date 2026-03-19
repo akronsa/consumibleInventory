@@ -162,14 +162,14 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
             return cached["val"]
 
     # Simple: listar modelos y filtrar por ref
-    data, _ = glpi_request("GET", "/ConsumableItem/", range_header="0-9999")
+    data, _ = glpi_request("GET", "/ConsumableItem/", params={"expand_dropdowns": 1}, range_header="0-9999")
     items = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
 
     found = next((it for it in items if str(it.get("ref", "")).strip() == ref), None)
     if not found:
         return None
 
-    val = {"modelId": int(found["id"]), "name": found.get("name"), "ref": found.get("ref", ref), "type": found.get("type")}
+    val = {"modelId": int(found["id"]), "name": found.get("name"), "ref": found.get("ref", ref), "type": found.get("consumableitemtypes_id")}
     with _model_cache_lock:
         _model_cache[ref] = {"ts": now, "val": val}
     return val
