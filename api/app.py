@@ -5,13 +5,16 @@ import threading
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 GLPI_BASE_URL = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
 GLPI_APP_TOKEN = os.environ.get("GLPI_APP_TOKEN", "")
 GLPI_USER_TOKEN = os.environ.get("GLPI_USER_TOKEN", "")
 PORT = int(os.environ.get("PORT", "3000"))
+API_KEY = os.environ.get("API_KEY", "")
 
 if not GLPI_BASE_URL:
     raise RuntimeError("Falta GLPI_BASE_URL")
@@ -19,10 +22,27 @@ if not GLPI_APP_TOKEN:
     raise RuntimeError("Falta GLPI_APP_TOKEN")
 if not GLPI_USER_TOKEN:
     raise RuntimeError("Falta GLPI_USER_TOKEN")
+if not API_KEY:
+    raise RuntimeError("Falta API_KEY")
 
 API = f"{GLPI_BASE_URL}/apirest.php"
 
+# ---------- Auth ----------
+def require_api_key(x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="API key inválida")
+
+def _get_client_ip(request: Request) -> str:
+    return (
+        request.headers.get("x-real-ip")
+        or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        or request.client.host
+    )
+
+limiter = Limiter(key_func=_get_client_ip)
 app = FastAPI(title="GLPI Consumibles Proxy (Legacy)")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ---------- Session cache ----------
 _session_lock = threading.Lock()
@@ -126,6 +146,9 @@ def today_yyyy_mm_dd() -> str:
     import datetime as dt
     return dt.date.today().isoformat()
 
+# ---------- Consume lock ----------
+_consume_lock = threading.Lock()
+
 # ---------- Cache ref -> model ----------
 _model_cache_lock = threading.Lock()
 _model_cache: Dict[str, Dict[str, Any]] = {}
@@ -160,8 +183,9 @@ class ConsumeRequest(BaseModel):
 def health():
     return {"ok": True}
 
-@app.get("/api/users")
-def users(q: str = Query(..., min_length=2)):
+@app.get("/api/users", dependencies=[Depends(require_api_key)])
+@limiter.limit("60/minute")
+def users(request: Request, q: str = Query(..., min_length=2)):
     params = {
         "criteria[0][field]": 1,
         "criteria[0][searchtype]": "contains",
@@ -176,8 +200,9 @@ def users(q: str = Query(..., min_length=2)):
         "totalcount": (data or {}).get("totalcount"),
     }
 
-@app.post("/api/consume")
-def consume(req: ConsumeRequest):
+@app.post("/api/consume", dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+def consume(request: Request, req: ConsumeRequest):
     barcode = normalize_barcode(req.barcode)
     if not barcode:
         raise HTTPException(status_code=400, detail="barcode requerido")
@@ -188,46 +213,44 @@ def consume(req: ConsumeRequest):
 
     model_id = model["modelId"]
 
-    data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
-    items: List[Dict[str, Any]] = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
+    with _consume_lock:
+        data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
+        items: List[Dict[str, Any]] = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
 
-    candidates = [c for c in items if is_available(c)]
-    if not candidates:
-        raise HTTPException(status_code=409, detail={"error": "Sin stock", "modelId": model_id, "modelName": model.get("name")})
+        candidates = [c for c in items if is_available(c)]
+        if not candidates:
+            raise HTTPException(status_code=409, detail={"error": "Sin stock", "modelId": model_id, "modelName": model.get("name")})
 
-    date_out = today_yyyy_mm_dd()
+        date_out = today_yyyy_mm_dd()
 
-    last_err = None
-    for c in candidates:
-        consumable_id = c.get("id")
-        try:
-            glpi_request(
-                "PUT",
-                f"/ConsumableItem/{model_id}/Consumable/{consumable_id}",
-                json_body={"input": {"items_id": str(req.user_id), "itemtype": "User", "date_out": date_out}},
-            )
-            # --- Contar stock restante ---
-            # Volvemos a pedir los consumibles para ver cuántos quedan disponibles
-            data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
-            all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
-            # Contamos los que NO tienen date_out y no están asignados
-            remaining = len([i for i in all_items if is_available(i)])
-            # -------------------------------------------
-            return {
-                "ok": True,
-                "model": {"id": model_id, "name": model.get("name"), "ref": model.get("ref")},
-                "consumable_id": consumable_id,
-                "date_out": date_out,
-                "remaining": remaining,
-            }
-        except HTTPException as e:
-            last_err = e.detail
-            continue
+        last_err = None
+        for c in candidates:
+            consumable_id = c.get("id")
+            try:
+                glpi_request(
+                    "PUT",
+                    f"/ConsumableItem/{model_id}/Consumable/{consumable_id}",
+                    json_body={"input": {"items_id": str(req.user_id), "itemtype": "User", "date_out": date_out}},
+                )
+                data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
+                all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
+                remaining = len([i for i in all_items if is_available(i)])
+                return {
+                    "ok": True,
+                    "model": {"id": model_id, "name": model.get("name"), "ref": model.get("ref")},
+                    "consumable_id": consumable_id,
+                    "date_out": date_out,
+                    "remaining": remaining,
+                }
+            except HTTPException as e:
+                last_err = e.detail
+                continue
 
     raise HTTPException(status_code=409, detail={"error": "No se pudo asignar (concurrencia)", "last": last_err})
 
-@app.get("/api/model/{barcode}")
-def get_model_info(barcode: str):
+@app.get("/api/model/{barcode}", dependencies=[Depends(require_api_key)])
+@limiter.limit("60/minute")
+def get_model_info(request: Request, barcode: str):
     barcode = normalize_barcode(barcode)
     model = get_model_by_ref(barcode)
     if not model:
