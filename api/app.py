@@ -37,7 +37,7 @@ _http_session.mount("http://", _adapter)
 # ---------- Auth ----------
 def require_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="API key inválida")
+        raise HTTPException(status_code=401, detail={"error": "API key inválida"})
 
 def _get_client_ip(request: Request) -> str:
     return (
@@ -55,7 +55,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 _session_lock = threading.Lock()
 _session_token: Optional[str] = None
 _session_obtained_at: float = 0.0
-SESSION_MAX_AGE_SEC = 8 * 60 * 60  # rotación defensiva
+SESSION_MAX_AGE_SEC = int(os.environ.get("SESSION_MAX_AGE_SEC", str(8 * 60 * 60)))
+GLPI_TIMEOUT_SEC   = int(os.environ.get("GLPI_TIMEOUT_SEC", "30"))
 
 def _init_session() -> str:
     """Init legacy session usando App-Token + Authorization: user_token"""
@@ -64,7 +65,7 @@ def _init_session() -> str:
         "App-Token": GLPI_APP_TOKEN,
         "Authorization": f"user_token {GLPI_USER_TOKEN}",
     }
-    r = _http_session.post(url, headers=headers, timeout=20)
+    r = _http_session.post(url, headers=headers, timeout=GLPI_TIMEOUT_SEC)
     if not r.ok:
         raise RuntimeError(f"initSession failed {r.status_code}: {r.text}")
 
@@ -107,7 +108,7 @@ def glpi_request(
             headers["Content-Type"] = "application/json"
         if range_header:
             headers["Range"] = range_header
-        return _http_session.request(method, url, headers=headers, params=params, json=json_body, timeout=30)
+        return _http_session.request(method, url, headers=headers, params=params, json=json_body, timeout=GLPI_TIMEOUT_SEC)
 
     token = get_session_token()
     r = do(token)
@@ -117,7 +118,7 @@ def glpi_request(
         r = do(token2)
 
     if not r.ok:
-        raise HTTPException(status_code=502, detail=f"GLPI {r.status_code}: {r.text}")
+        raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
 
     data = r.json() if r.text else None
     headers_out = {k.lower(): v for k, v in r.headers.items()}
@@ -159,7 +160,7 @@ _consume_lock = threading.Lock()
 # ---------- Cache ref -> model ----------
 _model_cache_lock = threading.Lock()
 _model_cache: Dict[str, Dict[str, Any]] = {}
-MODEL_CACHE_TTL_SEC = 10 * 60
+MODEL_CACHE_TTL_SEC = int(os.environ.get("MODEL_CACHE_TTL_SEC", str(10 * 60)))
 
 def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
     now = time.time()
@@ -212,11 +213,11 @@ def users(request: Request, q: str = Query(..., min_length=2)):
 def consume(request: Request, req: ConsumeRequest):
     barcode = normalize_barcode(req.barcode)
     if not barcode:
-        raise HTTPException(status_code=400, detail="barcode requerido")
+        raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
 
     model = get_model_by_ref(barcode)
     if not model:
-        raise HTTPException(status_code=404, detail=f"No existe ConsumableItem con ref={barcode}")
+        raise HTTPException(status_code=404, detail={"error": f"No existe ConsumableItem con ref={barcode}"})
 
     model_id = model["modelId"]
 
@@ -261,5 +262,5 @@ def get_model_info(request: Request, barcode: str):
     barcode = normalize_barcode(barcode)
     model = get_model_by_ref(barcode)
     if not model:
-        raise HTTPException(status_code=404, detail="Modelo no encontrado")
+        raise HTTPException(status_code=404, detail={"error": "Modelo no encontrado"})
     return model
