@@ -169,7 +169,7 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
     if not found:
         return None
 
-    val = {"modelId": int(found["id"]), "name": found.get("name"), "ref": found.get("ref", ref)}
+    val = {"modelId": int(found["id"]), "name": found.get("name"), "ref": found.get("ref", ref), "type": found.get("type")}
     with _model_cache_lock:
         _model_cache[ref] = {"ts": now, "val": val}
     return val

@@ -241,6 +241,15 @@
       color: var(--dark);
     }
 
+    .product-type {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--mid);
+      margin-top: 2px;
+    }
+
     .product-stock {
       font-size: 13px;
       font-weight: 700;
@@ -427,7 +436,10 @@
         <div id="spinner" class="spinner"></div>
       </div>
       <div id="productInfo" class="product-info">
-        <span class="product-name" id="productName"></span>
+        <div>
+          <div class="product-name" id="productName"></div>
+          <div class="product-type" id="productType"></div>
+        </div>
         <span class="product-stock" id="productStock"></span>
       </div>
       <div class="msg-area">
@@ -469,15 +481,17 @@
       $("barcode").focus();
     }
 
-    function setProduct(name, stock) {
+    function setProduct(name, type, stock) {
       const info = $("productInfo");
       if (!name) {
         info.classList.remove("visible");
         $("productName").textContent = "";
+        $("productType").textContent = "";
         $("productStock").textContent = "";
         return;
       }
       $("productName").textContent = name;
+      $("productType").textContent = type || "";
       $("productStock").textContent = stock !== undefined ? `Stock: ${stock}` : "";
       info.classList.add("visible");
     }
@@ -494,7 +508,7 @@
           const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
           if (r.ok) {
             const model = await r.json();
-            setProduct(model.name, model.stock);
+            setProduct(model.name, model.type, model.stock);
           } else {
             setProduct(null);
           }
