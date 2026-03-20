@@ -283,3 +283,41 @@ def get_model_info(request: Request, barcode: str):
     if not model:
         raise HTTPException(status_code=404, detail={"error": "Modelo no encontrado"})
     return model
+
+@app.get("/api/disk/{serial}", dependencies=[Depends(require_api_key)])
+@limiter.limit("60/minute")
+def get_disk_info(request: Request, serial: str):
+    serial = normalize_barcode(serial)
+    if not serial:
+        raise HTTPException(status_code=400, detail={"error": "serial requerido"})
+
+    params = {
+        "criteria[0][field]": 10,
+        "criteria[0][searchtype]": "equals",
+        "criteria[0][value]": serial,
+    }
+    data, _ = glpi_request("GET", "/search/Item_DeviceHardDrive", params=params, range_header="0-4")
+    results = (data or {}).get("data", [])
+
+    if not results:
+        raise HTTPException(status_code=404, detail={"error": f"No se encontró disco con serial {serial}"})
+
+    row = results[0]
+    computer_id = row.get("5")
+    itemtype = row.get("6")
+    disk_model = row.get("4")
+
+    if not computer_id or itemtype != "Computer":
+        return {"serial": serial, "installed": False, "disk": disk_model}
+
+    comp, _ = glpi_request("GET", f"/Computer/{computer_id}", params={"expand_dropdowns": 1})
+    return {
+        "serial": serial,
+        "installed": True,
+        "disk": disk_model,
+        "computer": {
+            "id": computer_id,
+            "name": comp.get("name"),
+            "user": comp.get("users_id") or None,
+        },
+    }

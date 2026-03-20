@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Inventario — Akron</title>
+  <title>Discos — Akron</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -46,11 +46,9 @@
     .logo-img { height: 36px; width: auto; display: block; }
 
     .header-title {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 14px; font-weight: 600;
       color: rgba(255,255,255,0.45);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
+      text-transform: uppercase; letter-spacing: 0.15em;
     }
 
     .btn-menu {
@@ -75,7 +73,6 @@
       z-index: 90; overflow-y: auto;
     }
     .sidebar.open { transform: translateX(0); }
-
     .sidebar-section { padding: 24px 0 8px; }
     .sidebar-section-title {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -114,16 +111,84 @@
       text-align: center; margin-bottom: 40px; letter-spacing: 0.03em;
     }
 
-    .placeholder-card {
+    .card {
       background: var(--white); box-shadow: var(--shadow);
-      padding: 48px 32px; width: 100%; max-width: 520px;
-      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      padding: 32px; width: 100%; max-width: 520px; margin-bottom: 16px;
     }
-    .placeholder-icon { color: var(--border); }
-    .placeholder-label {
-      font-size: 13px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.15em; color: var(--mid); text-align: center;
+    .card-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.2em; color: var(--mid); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
     }
+    .card-label::before {
+      content: ''; display: block; width: 3px; height: 14px;
+      background: var(--red); flex-shrink: 0;
+    }
+
+    .input-wrap { position: relative; }
+
+    input[type="text"] {
+      font-family: inherit; font-size: 18px; font-weight: 500;
+      color: var(--dark); background: var(--light);
+      border: 2px solid transparent; padding: 14px 16px;
+      width: 100%; outline: none;
+      transition: border-color .3s ease, background .3s ease;
+    }
+    input[type="text"]:focus { border-color: var(--red); background: var(--white); }
+    input::placeholder { color: #b1bec5; }
+
+    .spinner {
+      display: none; position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%); width: 18px; height: 18px;
+      border: 2px solid var(--border); border-top-color: var(--red);
+      border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    .spinner.visible { display: block; }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* ── Result card ── */
+    .result {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 10px;
+      border-left: 3px solid var(--red);
+    }
+    .result.visible { display: flex; }
+
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      background: var(--light);
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+    }
+    .result-row:first-child { border-top: none; }
+
+    .result-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.15em; color: var(--mid); white-space: nowrap; min-width: 80px;
+    }
+    .result-value {
+      font-size: 16px; font-weight: 600; color: var(--dark);
+    }
+
+    .badge-no-user {
+      font-size: 13px; font-weight: 600; color: var(--mid);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    /* ── Status message ── */
+    .msg-area { min-height: 44px; margin-top: 10px; display: flex; align-items: center; }
+    .msg {
+      display: none; padding: 10px 16px; font-size: 15px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em; width: 100%;
+    }
+    .msg.visible { display: block; }
+    .msg.ok   { background: #e6f7ef; color: #0a7a4a; border-left: 3px solid #0a7a4a; }
+    .msg.err  { background: #fdecea; color: var(--red); border-left: 3px solid var(--red); }
+    .msg.info { background: var(--light); color: var(--mid); border-left: 3px solid var(--border); }
 
     footer {
       text-align: center; padding: 20px; font-size: 13px;
@@ -135,6 +200,9 @@
       .header-title { display: none; }
       main { padding: 28px 16px; }
       .page-title { font-size: 30px; }
+      .page-subtitle { font-size: 15px; margin-bottom: 28px; }
+      .card { padding: 22px 18px; }
+      input[type="text"] { font-size: 16px; padding: 16px 14px; }
       body.sidebar-open .layout-content { margin-left: 0; }
       .sidebar { top: 56px; }
     }
@@ -147,7 +215,7 @@
     <a class="logo" href="index.html">
       <img class="logo-img" src="/logo.png" alt="Akron" />
     </a>
-    <span class="header-title">Inventario</span>
+    <span class="header-title">Consulta de discos</span>
   </header>
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -159,7 +227,7 @@
         <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8L4 7h16l-4-4z"/></svg>
         Consumibles
       </a>
-      <a class="sidebar-item" href="discos.html">
+      <a class="sidebar-item active" href="discos.html">
         <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         Discos
       </a>
@@ -167,7 +235,7 @@
         <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v0a2 2 0 002 2h14a2 2 0 002-2v0a2 2 0 00-2-2h-4"/><path d="M12 3v14"/><path d="M8 7l4-4 4 4"/></svg>
         Reportes
       </a>
-      <a class="sidebar-item active" href="inventario.html">
+      <a class="sidebar-item" href="inventario.html">
         <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Inventario
       </a>
@@ -177,15 +245,32 @@
   <div class="layout">
     <div class="layout-content">
       <main>
-        <h1 class="page-title">Inventario</h1>
-        <p class="page-subtitle">Próximamente disponible</p>
+        <h1 class="page-title">Consulta de discos</h1>
+        <p class="page-subtitle">Escaneá el número de serie del disco para ver dónde está instalado</p>
 
-        <div class="placeholder-card">
-          <svg class="placeholder-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
-          </svg>
-          <div class="placeholder-label">Este módulo está en desarrollo</div>
+        <div class="card">
+          <div class="card-label">Número de serie</div>
+          <div class="input-wrap">
+            <input id="serial" type="text" placeholder="Escaneá o ingresá el número de serie..." autocomplete="off" />
+            <div id="spinner" class="spinner"></div>
+          </div>
+          <div id="result" class="result">
+            <div class="result-row">
+              <span class="result-label">Modelo</span>
+              <span class="result-value" id="resDisk"></span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Equipo</span>
+              <span class="result-value" id="resComputer"></span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">Usuario</span>
+              <span class="result-value" id="resUser"></span>
+            </div>
+          </div>
+          <div class="msg-area">
+            <div id="msg" class="msg"></div>
+          </div>
         </div>
       </main>
       <footer>Akron &copy; 2025 — Sistema interno</footer>
@@ -193,6 +278,62 @@
   </div>
 
   <script>
+    const $ = (id) => document.getElementById(id);
+    let searchDebounce = null;
+
+    function setMsg(text, cls = "") {
+      const el = $("msg");
+      if (!text) { el.className = "msg"; el.textContent = ""; return; }
+      el.className = `msg visible ${cls}`;
+      el.textContent = text;
+    }
+
+    function setResult(data) {
+      if (!data) {
+        $("result").classList.remove("visible");
+        return;
+      }
+      $("resDisk").textContent = data.disk || "—";
+      $("resComputer").textContent = data.computer?.name || "No instalado en ningún equipo";
+      $("resUser").textContent = data.computer?.user || "Sin usuario asignado";
+      $("result").classList.add("visible");
+    }
+
+    $("serial").addEventListener("input", () => {
+      const val = $("serial").value.trim();
+      setResult(null);
+      setMsg("");
+      clearTimeout(searchDebounce);
+      if (val.length < 3) return;
+
+      $("spinner").classList.add("visible");
+      searchDebounce = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/disk/${encodeURIComponent(val)}`);
+          if (r.status === 404) {
+            setMsg("No se encontró ningún disco con ese número de serie.", "err");
+          } else if (!r.ok) {
+            const j = await r.json();
+            setMsg(j.detail?.error || "Error al consultar.", "err");
+          } else {
+            const data = await r.json();
+            setResult(data);
+            if (!data.installed) setMsg("Disco no instalado en ningún equipo.", "info");
+          }
+        } catch (e) {
+          setMsg("Error de conexión.", "err");
+        } finally {
+          $("spinner").classList.remove("visible");
+        }
+      }, 300);
+    });
+
+    if (window.matchMedia("(pointer: fine)").matches) {
+      $("serial").setAttribute("inputmode", "none");
+    }
+
+    window.addEventListener("load", () => $("serial").focus());
+
     const btnMenu = document.getElementById('btnMenu');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
