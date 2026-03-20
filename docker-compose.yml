@@ -8,6 +8,8 @@ services:
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN not set}
       API_KEY: ${API_KEY:?API_KEY not set}
       PORT: "3000"
+    volumes:
+      - /etc/akron/certs:/certs:ro
     restart: unless-stopped
     expose:
       - "3000"
