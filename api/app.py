@@ -132,7 +132,7 @@ def glpi_request(
 
     if not r.ok:
         log.error("GLPI error %s: %s", r.status_code, r.text[:200])
-    raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
+        raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
 
     data = r.json() if r.text else None
     headers_out = {k.lower(): v for k, v in r.headers.items()}
