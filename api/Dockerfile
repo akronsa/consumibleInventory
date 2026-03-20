@@ -8,7 +8,7 @@ ENV SSL_CERT_FILE=/certs/akronca.crt
 WORKDIR /app
 COPY app.py /app/app.py
 
-RUN pip install --no-cache-dir fastapi uvicorn requests slowapi
+RUN REQUESTS_CA_BUNDLE= SSL_CERT_FILE= pip install --no-cache-dir fastapi uvicorn requests slowapi
 
 EXPOSE 3000
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3000"]
