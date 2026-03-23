@@ -890,7 +890,9 @@
     });
 
     document.addEventListener("click", (e) => {
-      if (!["INPUT", "LI"].includes(e.target.tagName)) $("barcode").focus();
+      if (!["INPUT", "LI"].includes(e.target.tagName) && !e.target.closest("#scannerModal, #btnCamera")) {
+        $("barcode").focus();
+      }
     });
 
     // En desktop suprimir teclado virtual (hay escáner físico); en mobile mostrarlo
