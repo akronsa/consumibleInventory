@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -271,7 +272,7 @@
     .spinner {
       display: none;
       position: absolute;
-      right: 14px;
+      right: 50px;
       top: 50%;
       transform: translateY(-50%);
       width: 18px;
@@ -505,6 +506,127 @@
       body.sidebar-open .layout-content { margin-left: 0; }
       .sidebar { top: 56px; }
     }
+
+    /* ── Camera scanner button ── */
+    .btn-camera {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--mid);
+      display: flex;
+      align-items: center;
+      transition: color .2s ease;
+    }
+
+    .btn-camera:hover { color: var(--red); }
+
+    .btn-camera svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* ── Scanner modal ── */
+    .scanner-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .scanner-modal.visible { display: flex; }
+
+    .scanner-box {
+      background: var(--dark);
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scanner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .scanner-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .btn-scanner-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      font-size: 20px;
+      line-height: 1;
+      padding: 2px 6px;
+      transition: color .2s ease;
+    }
+
+    .btn-scanner-close:hover { color: var(--white); }
+
+    .scanner-video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #scannerVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .scanner-crosshair {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scanner-crosshair::before {
+      content: '';
+      width: 60%;
+      height: 55%;
+      border: 2px solid var(--red);
+      opacity: 0.8;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+    }
+
+    .scanner-status {
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+    }
+
+    .scanner-status.ok { color: #4caf8a; }
+    .scanner-status.err { color: var(--red); }
   </style>
 </head>
 <body>
@@ -561,6 +683,9 @@
       <div class="input-wrap">
         <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" />
         <div id="spinner" class="spinner"></div>
+        <button class="btn-camera" id="btnCamera" type="button" title="Escanear con cámara" aria-label="Escanear con cámara">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
       </div>
       <div id="productInfo" class="product-info">
         <div>
@@ -580,6 +705,21 @@
   </main>
 
   <footer>Akron &copy; 2025 — Sistema interno</footer>
+
+  <!-- Scanner modal -->
+  <div class="scanner-modal" id="scannerModal">
+    <div class="scanner-box">
+      <div class="scanner-header">
+        <span class="scanner-title">Escanear código</span>
+        <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="scannerVideo" autoplay playsinline muted></video>
+        <div class="scanner-crosshair"></div>
+      </div>
+      <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
+    </div>
+  </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -730,6 +870,71 @@
     }
 
     window.addEventListener("load", () => $("userSearch").focus());
+
+    // ── Camera scanner ──
+    let codeReader = null;
+    let scannerActive = false;
+
+    function openScanner() {
+      $("scannerModal").classList.add("visible");
+      $("scannerStatus").className = "scanner-status";
+      $("scannerStatus").textContent = "Apuntá la cámara al código...";
+      startScanner();
+    }
+
+    function closeScanner() {
+      stopScanner();
+      $("scannerModal").classList.remove("visible");
+    }
+
+    async function startScanner() {
+      if (scannerActive) return;
+      scannerActive = true;
+
+      if (!window.ZXingBrowser) {
+        $("scannerStatus").className = "scanner-status err";
+        $("scannerStatus").textContent = "Librería de escaneo no disponible.";
+        return;
+      }
+
+      try {
+        codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+        const videoEl = $("scannerVideo");
+
+        await codeReader.decodeFromVideoDevice(null, videoEl, (result, err) => {
+          if (!result) return;
+          const code = result.getText();
+          closeScanner();
+          const barcodeEl = $("barcode");
+          barcodeEl.value = code;
+          barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+      } catch (e) {
+        $("scannerStatus").className = "scanner-status err";
+        if (e.name === "NotAllowedError") {
+          $("scannerStatus").textContent = "Permiso de cámara denegado.";
+        } else if (e.name === "NotFoundError") {
+          $("scannerStatus").textContent = "No se encontró ninguna cámara.";
+        } else {
+          $("scannerStatus").textContent = "No se pudo acceder a la cámara.";
+        }
+        scannerActive = false;
+      }
+    }
+
+    function stopScanner() {
+      if (codeReader) {
+        codeReader.reset();
+        codeReader = null;
+      }
+      scannerActive = false;
+    }
+
+    $("btnCamera").addEventListener("click", openScanner);
+    $("btnScannerClose").addEventListener("click", closeScanner);
+    $("scannerModal").addEventListener("click", (e) => {
+      if (e.target === $("scannerModal")) closeScanner();
+    });
 
     // Sidebar
     const btnMenu = document.getElementById('btnMenu');
