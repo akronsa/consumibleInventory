@@ -637,6 +637,28 @@
       border: 2px solid var(--red);
       opacity: 0.85;
       box-shadow: 0 0 0 9999px rgba(0,0,0,0.3);
+      transition: border-color .2s ease;
+    }
+
+    .scanner-crosshair.focusing::before {
+      border-color: #f5c542;
+    }
+
+    .focus-ring {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 2px solid #f5c542;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.4);
+      transition: opacity .15s ease, transform .3s ease;
+    }
+
+    .focus-ring.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
     }
 
     .scanner-status {
@@ -744,7 +766,8 @@
       </div>
       <div class="scanner-video-wrap">
         <video id="scannerVideo" autoplay playsinline muted></video>
-        <div class="scanner-crosshair"></div>
+        <div class="scanner-crosshair" id="scannerCrosshair"></div>
+        <div class="focus-ring" id="focusRing"></div>
       </div>
       <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
     </div>
@@ -905,6 +928,7 @@
     // ── Camera scanner ──
     let mediaStream = null;
     let scanLoopId = null;
+    let refocusIntervalId = null;
     let barcodeDetector = null;
     let videoTrack = null;
     let torchOn = false;
@@ -921,6 +945,20 @@
     function closeScanner() {
       stopScanner();
       $("scannerModal").classList.remove("visible");
+    }
+
+    async function applyFocus(x = 0.5, y = 0.5) {
+      if (!videoTrack) return;
+      const caps = videoTrack.getCapabilities?.() || {};
+      if (!caps.focusMode) return;
+      try {
+        $("scannerCrosshair").classList.add("focusing");
+        const constraints = { advanced: [{ focusMode: "single-shot" }] };
+        if (caps.pointsOfInterest) constraints.advanced[0].pointsOfInterest = [{ x, y }];
+        await videoTrack.applyConstraints(constraints);
+      } catch (_) {} finally {
+        setTimeout(() => $("scannerCrosshair").classList.remove("focusing"), 600);
+      }
     }
 
     async function startScanner() {
@@ -948,17 +986,16 @@
         videoTrack = mediaStream.getVideoTracks()[0];
         const caps = videoTrack.getCapabilities?.() || {};
 
-        // Autofocus continuo
-        if (caps.focusMode?.includes?.("continuous")) {
-          videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
-        }
-
         // Torch
-        if (caps.torch) {
-          $("btnTorch").classList.add("visible");
-        }
+        if (caps.torch) $("btnTorch").classList.add("visible");
 
-        // Iniciar loop de detección
+        // Primer enfoque al centro
+        await applyFocus(0.5, 0.5);
+
+        // Refoco periódico al centro cada 2.5s
+        refocusIntervalId = setInterval(() => applyFocus(0.5, 0.5), 2500);
+
+        // Loop de detección
         const formats = await BarcodeDetector.getSupportedFormats();
         barcodeDetector = new BarcodeDetector({ formats });
         scanLoop(video);
@@ -975,6 +1012,23 @@
         stopScanner();
       }
     }
+
+    // Tap-to-focus
+    $("scannerVideo").addEventListener("click", (e) => {
+      if (!videoTrack) return;
+      const rect = e.target.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+
+      // Mostrar anillo visual
+      const ring = $("focusRing");
+      ring.style.left = `${e.clientX - rect.left}px`;
+      ring.style.top  = `${e.clientY - rect.top}px`;
+      ring.classList.add("active");
+      setTimeout(() => ring.classList.remove("active"), 700);
+
+      applyFocus(x, y);
+    });
 
     function scanLoop(video) {
       const tick = async () => {
@@ -997,7 +1051,9 @@
 
     function stopScanner() {
       cancelAnimationFrame(scanLoopId);
+      clearInterval(refocusIntervalId);
       scanLoopId = null;
+      refocusIntervalId = null;
       barcodeDetector = null;
       if (videoTrack && torchOn) {
         videoTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
@@ -1006,8 +1062,7 @@
         mediaStream.getTracks().forEach(t => t.stop());
         mediaStream = null;
       }
-      const video = $("scannerVideo");
-      video.srcObject = null;
+      $("scannerVideo").srcObject = null;
       videoTrack = null;
       torchOn = false;
     }
