@@ -994,7 +994,7 @@
       }
 
       try {
-        // Primera vez: enumerar cámaras traseras
+        // Primera vez: enumerar cámaras
         if (cameras.length === 0) {
           // Necesitamos un permiso previo para que enumerateDevices devuelva labels
           const tmp = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
@@ -1002,7 +1002,15 @@
 
           const all = await navigator.mediaDevices.enumerateDevices();
           cameras = all.filter(d => d.kind === "videoinput");
-          camIndex = index ?? 0;
+
+          // Restaurar última cámara usada
+          if (index == null) {
+            const savedId = localStorage.getItem("scanner_camera_id");
+            const savedIdx = savedId ? cameras.findIndex(c => c.deviceId === savedId) : -1;
+            camIndex = savedIdx >= 0 ? savedIdx : 0;
+          } else {
+            camIndex = index;
+          }
         } else {
           camIndex = index ?? camIndex;
         }
@@ -1022,6 +1030,9 @@
 
         videoTrack = mediaStream.getVideoTracks()[0];
         const caps = videoTrack.getCapabilities?.() || {};
+
+        // Guardar cámara seleccionada
+        localStorage.setItem("scanner_camera_id", cam.deviceId);
 
         // Label de cámara activa
         const label = cam.label || `Cámara ${camIndex + 1}`;
