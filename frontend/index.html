@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js"></script>
+  <script src="/html5-qrcode.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -585,34 +585,19 @@
     .scanner-video-wrap {
       position: relative;
       width: 100%;
-      aspect-ratio: 4/3;
       background: #000;
       overflow: hidden;
     }
 
-    #scannerVideo {
+    #qrReader {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
     }
 
-    .scanner-crosshair {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-
-    .scanner-crosshair::before {
-      content: '';
-      width: 60%;
-      height: 55%;
-      border: 2px solid var(--red);
-      opacity: 0.8;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+    /* Ocultar UI extra que inyecta html5-qrcode */
+    #qrReader__dashboard_section_csr button,
+    #qrReader__dashboard,
+    #qrReader__header_message {
+      display: none !important;
     }
 
     .scanner-status {
@@ -714,8 +699,7 @@
         <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
       </div>
       <div class="scanner-video-wrap">
-        <video id="scannerVideo" autoplay playsinline muted></video>
-        <div class="scanner-crosshair"></div>
+        <div id="qrReader"></div>
       </div>
       <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
     </div>
@@ -872,7 +856,7 @@
     window.addEventListener("load", () => $("userSearch").focus());
 
     // ── Camera scanner ──
-    let codeReader = null;
+    let html5QrCode = null;
     let scannerActive = false;
 
     function openScanner() {
@@ -891,27 +875,29 @@
       if (scannerActive) return;
       scannerActive = true;
 
-      if (!window.ZXingBrowser) {
+      if (!window.Html5Qrcode) {
         $("scannerStatus").className = "scanner-status err";
         $("scannerStatus").textContent = "Librería de escaneo no disponible.";
+        scannerActive = false;
         return;
       }
 
       try {
-        codeReader = new ZXingBrowser.BrowserMultiFormatReader();
-        const videoEl = $("scannerVideo");
-
-        await codeReader.decodeFromVideoDevice(null, videoEl, (result, err) => {
-          if (!result) return;
-          const code = result.getText();
-          closeScanner();
-          const barcodeEl = $("barcode");
-          barcodeEl.value = code;
-          barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
-        });
+        html5QrCode = new Html5Qrcode("qrReader");
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.333 },
+          (decodedText) => {
+            closeScanner();
+            const barcodeEl = $("barcode");
+            barcodeEl.value = decodedText;
+            barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
+          },
+          () => {} // errores por frame — ignorar
+        );
       } catch (e) {
         $("scannerStatus").className = "scanner-status err";
-        if (e.name === "NotAllowedError") {
+        if (e.name === "NotAllowedError" || (e.message || "").includes("Permission")) {
           $("scannerStatus").textContent = "Permiso de cámara denegado.";
         } else if (e.name === "NotFoundError") {
           $("scannerStatus").textContent = "No se encontró ninguna cámara.";
@@ -922,10 +908,13 @@
       }
     }
 
-    function stopScanner() {
-      if (codeReader) {
-        codeReader.reset();
-        codeReader = null;
+    async function stopScanner() {
+      if (html5QrCode) {
+        try {
+          if (html5QrCode.isScanning) await html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (_) {}
+        html5QrCode = null;
       }
       scannerActive = false;
     }
