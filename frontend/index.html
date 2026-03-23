@@ -569,6 +569,31 @@
       color: rgba(255,255,255,0.8);
     }
 
+    .scanner-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-torch {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      padding: 4px 8px;
+      transition: color .2s ease;
+    }
+
+    .btn-torch.visible { display: flex; align-items: center; }
+    .btn-torch.on { color: #f5c542; }
+    .btn-torch:hover { color: var(--white); }
+
+    .btn-torch svg {
+      width: 20px;
+      height: 20px;
+    }
+
     .btn-scanner-close {
       background: none;
       border: none;
@@ -696,7 +721,12 @@
     <div class="scanner-box">
       <div class="scanner-header">
         <span class="scanner-title">Escanear código</span>
-        <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
+        <div class="scanner-header-actions">
+          <button class="btn-torch" id="btnTorch" type="button" aria-label="Linterna">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8l-2 14h14L17 8"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
+          </button>
+          <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
+        </div>
       </div>
       <div class="scanner-video-wrap">
         <div id="qrReader"></div>
@@ -858,11 +888,14 @@
     // ── Camera scanner ──
     let html5QrCode = null;
     let scannerActive = false;
+    let torchOn = false;
 
     function openScanner() {
       $("scannerModal").classList.add("visible");
       $("scannerStatus").className = "scanner-status";
       $("scannerStatus").textContent = "Apuntá la cámara al código...";
+      $("btnTorch").classList.remove("visible", "on");
+      torchOn = false;
       startScanner();
     }
 
@@ -886,15 +919,30 @@
         html5QrCode = new Html5Qrcode("qrReader");
         await html5QrCode.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.333 },
+          { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1.333 },
           (decodedText) => {
             closeScanner();
             const barcodeEl = $("barcode");
             barcodeEl.value = decodedText;
             barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
           },
-          () => {} // errores por frame — ignorar
+          () => {}
         );
+
+        // Autofocus continuo y verificar soporte de torch
+        try {
+          await html5QrCode.applyVideoConstraints({
+            advanced: [{ focusMode: "continuous" }]
+          });
+        } catch (_) {}
+
+        try {
+          const capabilities = html5QrCode.getRunningTrackCapabilities();
+          if (capabilities && capabilities.torch) {
+            $("btnTorch").classList.add("visible");
+          }
+        } catch (_) {}
+
       } catch (e) {
         $("scannerStatus").className = "scanner-status err";
         if (e.name === "NotAllowedError" || (e.message || "").includes("Permission")) {
@@ -911,13 +959,29 @@
     async function stopScanner() {
       if (html5QrCode) {
         try {
-          if (html5QrCode.isScanning) await html5QrCode.stop();
+          if (html5QrCode.isScanning) {
+            // Apagar torch antes de cerrar
+            if (torchOn) await html5QrCode.applyVideoConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+            await html5QrCode.stop();
+          }
           html5QrCode.clear();
         } catch (_) {}
         html5QrCode = null;
       }
       scannerActive = false;
+      torchOn = false;
     }
+
+    $("btnTorch").addEventListener("click", async () => {
+      if (!html5QrCode) return;
+      try {
+        torchOn = !torchOn;
+        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
+        $("btnTorch").classList.toggle("on", torchOn);
+      } catch (_) {
+        torchOn = !torchOn; // revertir si falla
+      }
+    });
 
     $("btnCamera").addEventListener("click", openScanner);
     $("btnScannerClose").addEventListener("click", closeScanner);
