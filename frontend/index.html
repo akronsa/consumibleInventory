@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="/html5-qrcode.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -610,19 +609,34 @@
     .scanner-video-wrap {
       position: relative;
       width: 100%;
+      aspect-ratio: 4/3;
       background: #000;
       overflow: hidden;
     }
 
-    #qrReader {
+    #scannerVideo {
       width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    /* Ocultar UI extra que inyecta html5-qrcode */
-    #qrReader__dashboard_section_csr button,
-    #qrReader__dashboard,
-    #qrReader__header_message {
-      display: none !important;
+    .scanner-crosshair {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scanner-crosshair::before {
+      content: '';
+      width: 65%;
+      height: 55%;
+      border: 2px solid var(--red);
+      opacity: 0.85;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.3);
     }
 
     .scanner-status {
@@ -729,7 +743,8 @@
         </div>
       </div>
       <div class="scanner-video-wrap">
-        <div id="qrReader"></div>
+        <video id="scannerVideo" autoplay playsinline muted></video>
+        <div class="scanner-crosshair"></div>
       </div>
       <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
     </div>
@@ -886,8 +901,10 @@
     window.addEventListener("load", () => $("userSearch").focus());
 
     // ── Camera scanner ──
-    let html5QrCode = null;
-    let scannerActive = false;
+    let mediaStream = null;
+    let scanLoopId = null;
+    let barcodeDetector = null;
+    let videoTrack = null;
     let torchOn = false;
 
     function openScanner() {
@@ -905,81 +922,102 @@
     }
 
     async function startScanner() {
-      if (scannerActive) return;
-      scannerActive = true;
+      if (mediaStream) return;
 
-      if (!window.Html5Qrcode) {
+      if (!("BarcodeDetector" in window)) {
         $("scannerStatus").className = "scanner-status err";
-        $("scannerStatus").textContent = "Librería de escaneo no disponible.";
-        scannerActive = false;
+        $("scannerStatus").textContent = "Se requiere Chrome actualizado para usar la cámara.";
         return;
       }
 
       try {
-        html5QrCode = new Html5Qrcode("qrReader");
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 15, qrbox: { width: 280, height: 280 }, aspectRatio: 1.333 },
-          (decodedText) => {
-            closeScanner();
-            const barcodeEl = $("barcode");
-            barcodeEl.value = decodedText;
-            barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
-          },
-          () => {}
-        );
-
-        // Autofocus continuo y verificar soporte de torch
-        try {
-          await html5QrCode.applyVideoConstraints({
-            advanced: [{ focusMode: "continuous" }]
-          });
-        } catch (_) {}
-
-        try {
-          const capabilities = html5QrCode.getRunningTrackCapabilities();
-          if (capabilities && capabilities.torch) {
-            $("btnTorch").classList.add("visible");
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width:  { ideal: 1280 },
+            height: { ideal: 720 },
           }
-        } catch (_) {}
+        });
+
+        const video = $("scannerVideo");
+        video.srcObject = mediaStream;
+        await video.play();
+
+        videoTrack = mediaStream.getVideoTracks()[0];
+        const caps = videoTrack.getCapabilities?.() || {};
+
+        // Autofocus continuo
+        if (caps.focusMode?.includes?.("continuous")) {
+          videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+        }
+
+        // Torch
+        if (caps.torch) {
+          $("btnTorch").classList.add("visible");
+        }
+
+        // Iniciar loop de detección
+        const formats = await BarcodeDetector.getSupportedFormats();
+        barcodeDetector = new BarcodeDetector({ formats });
+        scanLoop(video);
 
       } catch (e) {
         $("scannerStatus").className = "scanner-status err";
-        if (e.name === "NotAllowedError" || (e.message || "").includes("Permission")) {
+        if (e.name === "NotAllowedError") {
           $("scannerStatus").textContent = "Permiso de cámara denegado.";
         } else if (e.name === "NotFoundError") {
           $("scannerStatus").textContent = "No se encontró ninguna cámara.";
         } else {
           $("scannerStatus").textContent = "No se pudo acceder a la cámara.";
         }
-        scannerActive = false;
+        stopScanner();
       }
     }
 
-    async function stopScanner() {
-      if (html5QrCode) {
+    function scanLoop(video) {
+      const tick = async () => {
+        if (!barcodeDetector || !mediaStream) return;
         try {
-          if (html5QrCode.isScanning) {
-            // Apagar torch antes de cerrar
-            if (torchOn) await html5QrCode.applyVideoConstraints({ advanced: [{ torch: false }] }).catch(() => {});
-            await html5QrCode.stop();
+          const codes = await barcodeDetector.detect(video);
+          if (codes.length > 0) {
+            const code = codes[0].rawValue;
+            closeScanner();
+            const barcodeEl = $("barcode");
+            barcodeEl.value = code;
+            barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
+            return;
           }
-          html5QrCode.clear();
         } catch (_) {}
-        html5QrCode = null;
+        scanLoopId = requestAnimationFrame(tick);
+      };
+      scanLoopId = requestAnimationFrame(tick);
+    }
+
+    function stopScanner() {
+      cancelAnimationFrame(scanLoopId);
+      scanLoopId = null;
+      barcodeDetector = null;
+      if (videoTrack && torchOn) {
+        videoTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
       }
-      scannerActive = false;
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+      const video = $("scannerVideo");
+      video.srcObject = null;
+      videoTrack = null;
       torchOn = false;
     }
 
     $("btnTorch").addEventListener("click", async () => {
-      if (!html5QrCode) return;
+      if (!videoTrack) return;
       try {
         torchOn = !torchOn;
-        await html5QrCode.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
+        await videoTrack.applyConstraints({ advanced: [{ torch: torchOn }] });
         $("btnTorch").classList.toggle("on", torchOn);
       } catch (_) {
-        torchOn = !torchOn; // revertir si falla
+        torchOn = !torchOn;
       }
     });
 
