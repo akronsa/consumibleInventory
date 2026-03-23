@@ -995,10 +995,15 @@
         // Refoco periódico al centro cada 2.5s
         refocusIntervalId = setInterval(() => applyFocus(0.5, 0.5), 2500);
 
+        // Canvas offscreen para recortar y escalar la zona del crosshair
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width  = 1024;
+        cropCanvas.height = 1024;
+
         // Loop de detección
         const formats = await BarcodeDetector.getSupportedFormats();
         barcodeDetector = new BarcodeDetector({ formats });
-        scanLoop(video);
+        scanLoop(video, cropCanvas);
 
       } catch (e) {
         $("scannerStatus").className = "scanner-status err";
@@ -1030,18 +1035,32 @@
       applyFocus(x, y);
     });
 
-    function scanLoop(video) {
+    function scanLoop(video, cropCanvas) {
+      const ctx = cropCanvas.getContext("2d");
+      // Recortar zona del crosshair (65% ancho, 55% alto del frame real)
+      const CROP_W = 0.65;
+      const CROP_H = 0.55;
+
       const tick = async () => {
         if (!barcodeDetector || !mediaStream) return;
         try {
-          const codes = await barcodeDetector.detect(video);
-          if (codes.length > 0) {
-            const code = codes[0].rawValue;
-            closeScanner();
-            const barcodeEl = $("barcode");
-            barcodeEl.value = code;
-            barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
-            return;
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
+          if (vw && vh) {
+            const sw = vw * CROP_W;
+            const sh = vh * CROP_H;
+            const sx = (vw - sw) / 2;
+            const sy = (vh - sh) / 2;
+            ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 1024, 1024);
+            const codes = await barcodeDetector.detect(cropCanvas);
+            if (codes.length > 0) {
+              const code = codes[0].rawValue;
+              closeScanner();
+              const barcodeEl = $("barcode");
+              barcodeEl.value = code;
+              barcodeEl.dispatchEvent(new Event("input", { bubbles: true }));
+              return;
+            }
           }
         } catch (_) {}
         scanLoopId = requestAnimationFrame(tick);
