@@ -574,7 +574,7 @@
       gap: 4px;
     }
 
-    .btn-torch {
+    .btn-torch, .btn-switch-cam {
       display: none;
       background: none;
       border: none;
@@ -584,13 +584,23 @@
       transition: color .2s ease;
     }
 
-    .btn-torch.visible { display: flex; align-items: center; }
+    .btn-torch.visible, .btn-switch-cam.visible { display: flex; align-items: center; }
     .btn-torch.on { color: #f5c542; }
-    .btn-torch:hover { color: var(--white); }
+    .btn-torch:hover, .btn-switch-cam:hover { color: var(--white); }
 
-    .btn-torch svg {
+    .btn-torch svg, .btn-switch-cam svg {
       width: 20px;
       height: 20px;
+    }
+
+    .cam-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.35);
+      text-align: center;
+      padding: 4px 18px 8px;
+      text-transform: uppercase;
     }
 
     .btn-scanner-close {
@@ -758,6 +768,9 @@
       <div class="scanner-header">
         <span class="scanner-title">Escanear código</span>
         <div class="scanner-header-actions">
+          <button class="btn-switch-cam" id="btnSwitchCam" type="button" aria-label="Cambiar cámara">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+          </button>
           <button class="btn-torch" id="btnTorch" type="button" aria-label="Linterna">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8l-2 14h14L17 8"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
           </button>
@@ -769,6 +782,7 @@
         <div class="scanner-crosshair" id="scannerCrosshair"></div>
         <div class="focus-ring" id="focusRing"></div>
       </div>
+      <div class="cam-label" id="camLabel"></div>
       <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
     </div>
   </div>
@@ -932,12 +946,16 @@
     let barcodeDetector = null;
     let videoTrack = null;
     let torchOn = false;
+    let cameras = [];
+    let camIndex = 0;
 
     function openScanner() {
       $("scannerModal").classList.add("visible");
       $("scannerStatus").className = "scanner-status";
       $("scannerStatus").textContent = "Apuntá la cámara al código...";
       $("btnTorch").classList.remove("visible", "on");
+      $("btnSwitchCam").classList.remove("visible");
+      $("camLabel").textContent = "";
       torchOn = false;
       startScanner();
     }
@@ -961,8 +979,13 @@
       }
     }
 
-    async function startScanner() {
-      if (mediaStream) return;
+    async function startScanner(index) {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+      cancelAnimationFrame(scanLoopId);
+      clearInterval(refocusIntervalId);
 
       if (!("BarcodeDetector" in window)) {
         $("scannerStatus").className = "scanner-status err";
@@ -971,9 +994,23 @@
       }
 
       try {
+        // Primera vez: enumerar cámaras traseras
+        if (cameras.length === 0) {
+          // Necesitamos un permiso previo para que enumerateDevices devuelva labels
+          const tmp = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+          tmp.getTracks().forEach(t => t.stop());
+
+          const all = await navigator.mediaDevices.enumerateDevices();
+          cameras = all.filter(d => d.kind === "videoinput");
+          camIndex = index ?? 0;
+        } else {
+          camIndex = index ?? camIndex;
+        }
+
+        const cam = cameras[camIndex];
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: "environment" },
+            deviceId: { exact: cam.deviceId },
             width:  { ideal: 3840 },
             height: { ideal: 2160 },
           }
@@ -986,23 +1023,32 @@
         videoTrack = mediaStream.getVideoTracks()[0];
         const caps = videoTrack.getCapabilities?.() || {};
 
+        // Label de cámara activa
+        const label = cam.label || `Cámara ${camIndex + 1}`;
+        $("camLabel").textContent = `${camIndex + 1} / ${cameras.length} — ${label}`;
+
+        // Botón de cambio de cámara (solo si hay más de una)
+        if (cameras.length > 1) $("btnSwitchCam").classList.add("visible");
+
         // Torch
         if (caps.torch) $("btnTorch").classList.add("visible");
+        else $("btnTorch").classList.remove("visible", "on");
 
-        // Primer enfoque al centro
+        torchOn = false;
+
+        // Primer enfoque
         await applyFocus(0.5, 0.5);
-
-        // Refoco periódico al centro cada 2.5s
         refocusIntervalId = setInterval(() => applyFocus(0.5, 0.5), 2500);
 
-        // Canvas offscreen para recortar y escalar la zona del crosshair
+        // Canvas offscreen
         const cropCanvas = document.createElement("canvas");
         cropCanvas.width  = 1024;
         cropCanvas.height = 1024;
 
-        // Loop de detección
-        const formats = await BarcodeDetector.getSupportedFormats();
-        barcodeDetector = new BarcodeDetector({ formats });
+        if (!barcodeDetector) {
+          const formats = await BarcodeDetector.getSupportedFormats();
+          barcodeDetector = new BarcodeDetector({ formats });
+        }
         scanLoop(video, cropCanvas);
 
       } catch (e) {
@@ -1074,6 +1120,8 @@
       scanLoopId = null;
       refocusIntervalId = null;
       barcodeDetector = null;
+      cameras = [];
+      camIndex = 0;
       if (videoTrack && torchOn) {
         videoTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
       }
@@ -1085,6 +1133,11 @@
       videoTrack = null;
       torchOn = false;
     }
+
+    $("btnSwitchCam").addEventListener("click", () => {
+      if (cameras.length < 2) return;
+      startScanner((camIndex + 1) % cameras.length);
+    });
 
     $("btnTorch").addEventListener("click", async () => {
       if (!videoTrack) return;
