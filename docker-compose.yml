@@ -24,9 +24,11 @@ services:
     environment:
       API_KEY: ${API_KEY:?API_KEY not set}
     ports:
-      - "8085:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
+      - /etc/akron/certs:/certs:ro
     restart: unless-stopped
     networks:
       - glpi_net
