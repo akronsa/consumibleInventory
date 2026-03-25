@@ -6,9 +6,10 @@ ENV REQUESTS_CA_BUNDLE=/certs/akronca.crt
 ENV SSL_CERT_FILE=/certs/akronca.crt
 
 WORKDIR /app
+COPY requirements.txt /app/requirements.txt
 COPY app.py /app/app.py
 
-RUN REQUESTS_CA_BUNDLE= SSL_CERT_FILE= pip install --no-cache-dir fastapi uvicorn requests slowapi
+RUN REQUESTS_CA_BUNDLE= SSL_CERT_FILE= pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 3000
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3000"]
