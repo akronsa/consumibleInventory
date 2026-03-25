@@ -24,7 +24,7 @@ services:
     environment:
       API_KEY: ${API_KEY:?API_KEY not set}
     ports:
-      - "8085:80"
+      - "80:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
     restart: unless-stopped
