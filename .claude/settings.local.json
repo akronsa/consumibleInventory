@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/jcaamano/Desktop/Proyectos/consumableInventory/consumibleInventory/consumibleInventory -type f \\\\\\(-name *.txt -o -name *.md -o -name *.yml -o -name *.yaml -o -name *.json -o -name *.conf -o -name Dockerfile -o -name .env* \\\\\\))"
+    ]
+  }
+}
