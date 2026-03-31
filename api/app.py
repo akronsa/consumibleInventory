@@ -46,6 +46,12 @@ _adapter = HTTPAdapter(pool_connections=1, pool_maxsize=10, max_retries=0)
 _http_session.mount("https://", _adapter)
 _http_session.mount("http://", _adapter)
 
+# Sesión separada para APIs externas (sin el CA interno de Akron)
+_external_session = requests.Session()
+_external_session.verify = True  # usa el bundle de certifi, ignora REQUESTS_CA_BUNDLE
+_external_session.mount("https://", HTTPAdapter(pool_connections=1, pool_maxsize=4, max_retries=0))
+_external_session.mount("http://",  HTTPAdapter(pool_connections=1, pool_maxsize=4, max_retries=0))
+
 # ---------- Auth ----------
 def require_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
@@ -232,7 +238,7 @@ def _eandata_lookup(barcode: str) -> Optional[Dict[str, str]]:
     if not EANDATA_API_KEY:
         return None
     try:
-        r = _http_session.get(
+        r = _external_session.get(
             "https://api.eandata.com/v3/",
             params={"key": EANDATA_API_KEY, "mode": "json", "find": barcode},
             timeout=10,
