@@ -20,12 +20,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("consumibles")
 
-GLPI_BASE_URL    = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
-GLPI_APP_TOKEN   = os.environ.get("GLPI_APP_TOKEN", "")
-GLPI_USER_TOKEN  = os.environ.get("GLPI_USER_TOKEN", "")
-PORT             = int(os.environ.get("PORT", "3000"))
-API_KEY          = os.environ.get("API_KEY", "")
-EANDATA_API_KEY  = os.environ.get("EANDATA_API_KEY", "")
+GLPI_BASE_URL   = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
+GLPI_APP_TOKEN  = os.environ.get("GLPI_APP_TOKEN", "")
+GLPI_USER_TOKEN = os.environ.get("GLPI_USER_TOKEN", "")
+PORT            = int(os.environ.get("PORT", "3000"))
+API_KEY         = os.environ.get("API_KEY", "")
 
 if not GLPI_BASE_URL:
     raise RuntimeError("Falta GLPI_BASE_URL")
@@ -46,11 +45,6 @@ _adapter = HTTPAdapter(pool_connections=1, pool_maxsize=10, max_retries=0)
 _http_session.mount("https://", _adapter)
 _http_session.mount("http://", _adapter)
 
-# Sesión separada para APIs externas (sin el CA interno de Akron)
-_external_session = requests.Session()
-_external_session.verify = True  # usa el bundle de certifi, ignora REQUESTS_CA_BUNDLE
-_external_session.mount("https://", HTTPAdapter(pool_connections=1, pool_maxsize=4, max_retries=0))
-_external_session.mount("http://",  HTTPAdapter(pool_connections=1, pool_maxsize=4, max_retries=0))
 
 # ---------- Auth ----------
 def require_api_key(x_api_key: str = Header(...)):
@@ -193,7 +187,7 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
     return val
 
 # ==========================================================================
-# Notebooks — SQLite + eandata.com
+# Notebooks — SQLite
 # ==========================================================================
 
 DB_PATH = os.environ.get("NOTEBOOKS_DB_PATH", "/app/data/notebooks.db")
@@ -234,54 +228,15 @@ def _db_init():
 
 _db_init()
 
-def _eandata_lookup(barcode: str) -> Optional[Dict[str, str]]:
-    if not EANDATA_API_KEY:
-        return None
-    try:
-        r = _external_session.get(
-            "https://api.eandata.com/v3/",
-            params={"key": EANDATA_API_KEY, "mode": "json", "find": barcode},
-            timeout=10,
-        )
-        if not r.ok:
-            return None
-        j = r.json()
-        if j.get("status", {}).get("code") != 200:
-            return None
-        product = j.get("product", {})
-        name  = product.get("name") or ""
-        brand = (product.get("attributes") or {}).get("brand") or ""
-        if not name:
-            return None
-        return {"name": name, "brand": brand}
-    except Exception as e:
-        log.warning("eandata lookup error: %s", e)
-        return None
-
-def _nb_get_or_create_product(barcode: str) -> Optional[Dict[str, str]]:
-    """Devuelve el producto desde la DB o lo busca en eandata.com y lo guarda."""
+def _nb_get_product(barcode: str) -> Optional[Dict[str, str]]:
+    """Devuelve el producto desde la DB local, o None si no existe."""
     with _db_lock:
         conn = _db_connect()
         row = conn.execute("SELECT barcode, name, brand FROM nb_products WHERE barcode = ?", (barcode,)).fetchone()
         conn.close()
     if row:
         return {"barcode": row["barcode"], "name": row["name"], "brand": row["brand"]}
-
-    info = _eandata_lookup(barcode)
-    if not info:
-        return None
-
-    with _db_lock:
-        conn = _db_connect()
-        conn.execute(
-            "INSERT OR IGNORE INTO nb_products (barcode, name, brand) VALUES (?, ?, ?)",
-            (barcode, info["name"], info["brand"]),
-        )
-        conn.commit()
-        conn.close()
-
-    log.info("NB product saved barcode=%s name=%s", barcode, info["name"])
-    return {"barcode": barcode, "name": info["name"], "brand": info["brand"]}
+    return None
 
 def _nb_get_stock(barcode: str) -> List[Dict[str, Any]]:
     with _db_lock:
@@ -311,9 +266,9 @@ def nb_lookup(request: Request, barcode: str):
     if not barcode:
         raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
 
-    product = _nb_get_or_create_product(barcode)
+    product = _nb_get_product(barcode)
     if not product:
-        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado. Verificá el código o configurá EANDATA_API_KEY."})
+        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado"})
 
     stock = _nb_get_stock(barcode)
     return {**product, "stock": stock}
@@ -369,9 +324,9 @@ def nb_entry(request: Request, req: NbMoveRequest):
     if company not in COMPANIES:
         raise HTTPException(status_code=400, detail={"error": f"Empresa inválida. Opciones: {sorted(COMPANIES)}"})
 
-    product = _nb_get_or_create_product(barcode)
+    product = _nb_get_product(barcode)
     if not product:
-        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado. Verificá el código o configurá EANDATA_API_KEY."})
+        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado"})
 
     with _db_lock:
         conn = _db_connect()
@@ -428,7 +383,7 @@ def nb_exit(request: Request, req: NbMoveRequest):
         conn.commit()
         conn.close()
 
-    product = _nb_get_or_create_product(barcode)
+    product = _nb_get_product(barcode)
     log.info("NB EXIT barcode=%s company=%s quantity=%s", barcode, company, quantity)
     return {"ok": True, "product": product, "company": company, "quantity": quantity}
 

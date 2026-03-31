@@ -7,14 +7,10 @@ services:
       GLPI_APP_TOKEN: ${GLPI_APP_TOKEN:?GLPI_APP_TOKEN not set}
       GLPI_USER_TOKEN: ${GLPI_USER_TOKEN:?GLPI_USER_TOKEN not set}
       API_KEY: ${API_KEY:?API_KEY not set}
-      EANDATA_API_KEY: ${EANDATA_API_KEY:-}
       PORT: "3000"
     volumes:
       - /etc/akron/certs:/certs:ro
       - notebooks_data:/app/data
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
     restart: unless-stopped
     expose:
       - "3000"
