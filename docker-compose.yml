@@ -12,6 +12,9 @@ services:
     volumes:
       - /etc/akron/certs:/certs:ro
       - notebooks_data:/app/data
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
     expose:
       - "3000"
