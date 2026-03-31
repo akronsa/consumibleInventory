@@ -1,6 +1,7 @@
 # api/app.py
 import os
 import time
+import sqlite3
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -19,11 +20,12 @@ logging.basicConfig(
 )
 log = logging.getLogger("consumibles")
 
-GLPI_BASE_URL = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
-GLPI_APP_TOKEN = os.environ.get("GLPI_APP_TOKEN", "")
-GLPI_USER_TOKEN = os.environ.get("GLPI_USER_TOKEN", "")
-PORT = int(os.environ.get("PORT", "3000"))
-API_KEY = os.environ.get("API_KEY", "")
+GLPI_BASE_URL    = os.environ.get("GLPI_BASE_URL", "").rstrip("/")
+GLPI_APP_TOKEN   = os.environ.get("GLPI_APP_TOKEN", "")
+GLPI_USER_TOKEN  = os.environ.get("GLPI_USER_TOKEN", "")
+PORT             = int(os.environ.get("PORT", "3000"))
+API_KEY          = os.environ.get("API_KEY", "")
+EANDATA_API_KEY  = os.environ.get("EANDATA_API_KEY", "")
 
 if not GLPI_BASE_URL:
     raise RuntimeError("Falta GLPI_BASE_URL")
@@ -35,6 +37,8 @@ if not API_KEY:
     raise RuntimeError("Falta API_KEY")
 
 API = f"{GLPI_BASE_URL}/apirest.php"
+
+COMPANIES = {"Akron", "Mojon Uno", "Tekron", "Terraplane", "Fundacion Akron"}
 
 # ---------- HTTP session (connection pooling) ----------
 _http_session = requests.Session()
@@ -90,7 +94,6 @@ def get_session_token(force_refresh: bool = False) -> str:
         now = time.time()
         if not force_refresh and _session_token and (now - _session_obtained_at) < SESSION_MAX_AGE_SEC:
             return _session_token
-        # Si otro thread ya renovó mientras esperábamos el lock, reusar su token
         if force_refresh and _session_token and (now - _session_obtained_at) < 10:
             return _session_token
         log.info("Renovando session GLPI (force=%s)", force_refresh)
@@ -142,22 +145,10 @@ def glpi_request(
 def normalize_barcode(s: Any) -> str:
     return str(s or "").strip()
 
-# def is_available(c: Dict[str, Any]) -> bool:
-#     return (
-#         c.get("date_out") is None
-#         and (c.get("itemtype") is None or c.get("itemtype") == "")
-#         and str(c.get("items_id", "0")) in ("0", "0.0")
-#     )
 def is_available(c: Dict[str, Any]) -> bool:
-    # 1. date_out debe ser None o estar vacío
     date_out = c.get("date_out")
-    
-    # 2. items_id debe ser 0, None o "0"
     items_id = c.get("items_id")
-    
-    # 3. itemtype debe ser None o vacío
     itemtype = c.get("itemtype")
-
     return (
         (date_out is None or date_out == "") and
         (items_id is None or str(items_id) in ("0", "0.0", "")) and
@@ -183,7 +174,6 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
         if cached and (now - cached["ts"]) < MODEL_CACHE_TTL_SEC:
             return cached["val"]
 
-    # Simple: listar modelos y filtrar por ref
     data, _ = glpi_request("GET", "/ConsumableItem/", params={"expand_dropdowns": 1}, range_header="0-9999")
     items = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
 
@@ -196,7 +186,221 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
         _model_cache[ref] = {"ts": now, "val": val}
     return val
 
-# ---------- API ----------
+# ==========================================================================
+# Notebooks — SQLite + eandata.com
+# ==========================================================================
+
+DB_PATH = os.environ.get("NOTEBOOKS_DB_PATH", "/app/data/notebooks.db")
+_db_lock = threading.Lock()
+
+def _db_connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def _db_init():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    with _db_lock:
+        conn = _db_connect()
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS nb_products (
+                barcode  TEXT PRIMARY KEY,
+                name     TEXT,
+                brand    TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS nb_stock (
+                barcode  TEXT NOT NULL,
+                company  TEXT NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (barcode, company)
+            );
+            CREATE TABLE IF NOT EXISTS nb_movements (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                barcode    TEXT NOT NULL,
+                company    TEXT NOT NULL,
+                direction  TEXT NOT NULL CHECK(direction IN ('+', '-')),
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+        """)
+        conn.commit()
+        conn.close()
+
+_db_init()
+
+def _eandata_lookup(barcode: str) -> Optional[Dict[str, str]]:
+    if not EANDATA_API_KEY:
+        return None
+    try:
+        r = _http_session.get(
+            "https://api.eandata.com/v3/",
+            params={"key": EANDATA_API_KEY, "mode": "json", "find": barcode},
+            timeout=10,
+        )
+        if not r.ok:
+            return None
+        j = r.json()
+        if j.get("status", {}).get("code") != 200:
+            return None
+        product = j.get("product", {})
+        name  = product.get("name") or ""
+        brand = (product.get("attributes") or {}).get("brand") or ""
+        if not name:
+            return None
+        return {"name": name, "brand": brand}
+    except Exception as e:
+        log.warning("eandata lookup error: %s", e)
+        return None
+
+def _nb_get_or_create_product(barcode: str) -> Optional[Dict[str, str]]:
+    """Devuelve el producto desde la DB o lo busca en eandata.com y lo guarda."""
+    with _db_lock:
+        conn = _db_connect()
+        row = conn.execute("SELECT barcode, name, brand FROM nb_products WHERE barcode = ?", (barcode,)).fetchone()
+        conn.close()
+    if row:
+        return {"barcode": row["barcode"], "name": row["name"], "brand": row["brand"]}
+
+    info = _eandata_lookup(barcode)
+    if not info:
+        return None
+
+    with _db_lock:
+        conn = _db_connect()
+        conn.execute(
+            "INSERT OR IGNORE INTO nb_products (barcode, name, brand) VALUES (?, ?, ?)",
+            (barcode, info["name"], info["brand"]),
+        )
+        conn.commit()
+        conn.close()
+
+    log.info("NB product saved barcode=%s name=%s", barcode, info["name"])
+    return {"barcode": barcode, "name": info["name"], "brand": info["brand"]}
+
+def _nb_get_stock(barcode: str) -> List[Dict[str, Any]]:
+    with _db_lock:
+        conn = _db_connect()
+        rows = conn.execute(
+            "SELECT company, quantity FROM nb_stock WHERE barcode = ? AND quantity > 0 ORDER BY company",
+            (barcode,),
+        ).fetchall()
+        conn.close()
+    return [{"company": r["company"], "quantity": r["quantity"]} for r in rows]
+
+# ---------- Notebooks request models ----------
+class NbMoveRequest(BaseModel):
+    barcode: str
+    company: str
+
+# ---------- Notebooks endpoints ----------
+@app.get("/api/notebooks/lookup/{barcode}", dependencies=[Depends(require_api_key)])
+@limiter.limit("60/minute")
+def nb_lookup(request: Request, barcode: str):
+    barcode = normalize_barcode(barcode)
+    if not barcode:
+        raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
+
+    product = _nb_get_or_create_product(barcode)
+    if not product:
+        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado. Verificá el código o configurá EANDATA_API_KEY."})
+
+    stock = _nb_get_stock(barcode)
+    return {**product, "stock": stock}
+
+@app.get("/api/notebooks/stock", dependencies=[Depends(require_api_key)])
+@limiter.limit("60/minute")
+def nb_stock_all(request: Request):
+    with _db_lock:
+        conn = _db_connect()
+        rows = conn.execute("""
+            SELECT s.barcode, p.name, p.brand, s.company, s.quantity
+            FROM nb_stock s
+            JOIN nb_products p ON p.barcode = s.barcode
+            WHERE s.quantity > 0
+            ORDER BY p.name, s.company
+        """).fetchall()
+        conn.close()
+    return [{"barcode": r["barcode"], "name": r["name"], "brand": r["brand"],
+             "company": r["company"], "quantity": r["quantity"]} for r in rows]
+
+@app.post("/api/notebooks/entry", dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+def nb_entry(request: Request, req: NbMoveRequest):
+    barcode = normalize_barcode(req.barcode)
+    company = req.company.strip()
+
+    if not barcode:
+        raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
+    if company not in COMPANIES:
+        raise HTTPException(status_code=400, detail={"error": f"Empresa inválida. Opciones: {sorted(COMPANIES)}"})
+
+    product = _nb_get_or_create_product(barcode)
+    if not product:
+        raise HTTPException(status_code=404, detail={"error": "Producto no encontrado. Verificá el código o configurá EANDATA_API_KEY."})
+
+    with _db_lock:
+        conn = _db_connect()
+        conn.execute(
+            "INSERT INTO nb_stock (barcode, company, quantity) VALUES (?, ?, 1) "
+            "ON CONFLICT(barcode, company) DO UPDATE SET quantity = quantity + 1",
+            (barcode, company),
+        )
+        conn.execute(
+            "INSERT INTO nb_movements (barcode, company, direction) VALUES (?, ?, '+')",
+            (barcode, company),
+        )
+        quantity = conn.execute(
+            "SELECT quantity FROM nb_stock WHERE barcode = ? AND company = ?", (barcode, company)
+        ).fetchone()["quantity"]
+        conn.commit()
+        conn.close()
+
+    log.info("NB ENTRY barcode=%s company=%s quantity=%s", barcode, company, quantity)
+    return {"ok": True, "product": product, "company": company, "quantity": quantity}
+
+@app.post("/api/notebooks/exit", dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+def nb_exit(request: Request, req: NbMoveRequest):
+    barcode = normalize_barcode(req.barcode)
+    company = req.company.strip()
+
+    if not barcode:
+        raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
+    if company not in COMPANIES:
+        raise HTTPException(status_code=400, detail={"error": f"Empresa inválida. Opciones: {sorted(COMPANIES)}"})
+
+    with _db_lock:
+        conn = _db_connect()
+        row = conn.execute(
+            "SELECT quantity FROM nb_stock WHERE barcode = ? AND company = ?", (barcode, company)
+        ).fetchone()
+
+        if not row or row["quantity"] <= 0:
+            conn.close()
+            raise HTTPException(status_code=409, detail={"error": f"Sin stock de este equipo en {company}"})
+
+        conn.execute(
+            "UPDATE nb_stock SET quantity = quantity - 1 WHERE barcode = ? AND company = ?",
+            (barcode, company),
+        )
+        conn.execute(
+            "INSERT INTO nb_movements (barcode, company, direction) VALUES (?, ?, '-')",
+            (barcode, company),
+        )
+        quantity = conn.execute(
+            "SELECT quantity FROM nb_stock WHERE barcode = ? AND company = ?", (barcode, company)
+        ).fetchone()["quantity"]
+        conn.commit()
+        conn.close()
+
+    product = _nb_get_or_create_product(barcode)
+    log.info("NB EXIT barcode=%s company=%s quantity=%s", barcode, company, quantity)
+    return {"ok": True, "product": product, "company": company, "quantity": quantity}
+
+# ==========================================================================
+# API — GLPI endpoints
+# ==========================================================================
+
 class ConsumeRequest(BaseModel):
     user_id: int
     barcode: str
