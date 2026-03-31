@@ -633,6 +633,21 @@
           <div class="product-brand" id="productBrand"></div>
         </div>
       </div>
+
+      <!-- Formulario manual (cuando el barcode no está en la DB) -->
+      <div id="manualForm" style="display:none; margin-top:14px; display:none; flex-direction:column; gap:10px;">
+        <div style="font-size:12px; color:var(--mid); font-weight:600; text-transform:uppercase; letter-spacing:0.1em;">
+          Producto no encontrado — ingresá los datos manualmente
+        </div>
+        <input id="manualName" type="text" placeholder="Nombre del modelo (ej: ThinkPad E14 Gen 5)" autocomplete="off"
+          style="border:1.5px solid var(--border); padding:10px 12px; font-family:inherit; font-size:15px; font-weight:500; color:var(--dark); outline:none; width:100%;" />
+        <input id="manualBrand" type="text" placeholder="Marca (ej: Lenovo)" autocomplete="off"
+          style="border:1.5px solid var(--border); padding:10px 12px; font-family:inherit; font-size:15px; font-weight:500; color:var(--dark); outline:none; width:100%;" />
+        <button id="btnSaveProduct" onclick="saveProduct()"
+          style="padding:11px; background:var(--dark); color:var(--white); border:none; font-family:inherit; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; cursor:pointer;">
+          Guardar producto
+        </button>
+      </div>
     </div>
 
     <!-- Card: Empresa -->
@@ -729,6 +744,15 @@
       el.textContent = text;
     }
 
+    function showManualForm(show) {
+      $("manualForm").style.display = show ? "flex" : "none";
+      if (show) {
+        $("manualName").value = "";
+        $("manualBrand").value = "";
+        setTimeout(() => $("manualName").focus(), 50);
+      }
+    }
+
     function setProduct(product) {
       currentProduct = product;
       const info = $("productInfo");
@@ -740,8 +764,35 @@
         $("productName").textContent = product.name;
         $("productBrand").textContent = product.brand || "";
         info.classList.add("visible");
+        showManualForm(false);
       }
       updateButtons();
+    }
+
+    async function saveProduct() {
+      const name = $("manualName").value.trim();
+      if (!name) { $("manualName").focus(); return; }
+      const brand = $("manualBrand").value.trim();
+
+      $("btnSaveProduct").disabled = true;
+      try {
+        const r = await fetch("/api/notebooks/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ barcode: currentBarcode, name, brand }),
+        });
+        const j = await r.json();
+        if (r.ok) {
+          setProduct(j);
+          setMsg("");
+        } else {
+          setMsg(j.detail?.error || "Error al guardar", "err");
+        }
+      } catch (e) {
+        setMsg("Error de conexión", "err");
+      } finally {
+        $("btnSaveProduct").disabled = false;
+      }
     }
 
     // ── Lookup al escanear ──
@@ -749,6 +800,7 @@
       const code = $("barcode").value.trim();
       currentBarcode = code;
       setProduct(null);
+      showManualForm(false);
       setMsg("");
       if (code.length < 3) return;
 
@@ -762,8 +814,8 @@
             setProduct(j);
             renderStockForProduct(j.stock || []);
           } else {
-            const err = j.detail?.error || j.detail || "Producto no encontrado";
-            setMsg(err, "err");
+            showManualForm(true);
+            setMsg("");
           }
         } catch (e) {
           setMsg("Error de conexión", "err");

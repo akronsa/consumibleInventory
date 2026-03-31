@@ -298,6 +298,11 @@ class NbMoveRequest(BaseModel):
     barcode: str
     company: str
 
+class NbProductRequest(BaseModel):
+    barcode: str
+    name: str
+    brand: str = ""
+
 # ---------- Notebooks endpoints ----------
 @app.get("/api/notebooks/lookup/{barcode}", dependencies=[Depends(require_api_key)])
 @limiter.limit("60/minute")
@@ -312,6 +317,30 @@ def nb_lookup(request: Request, barcode: str):
 
     stock = _nb_get_stock(barcode)
     return {**product, "stock": stock}
+
+@app.post("/api/notebooks/products", dependencies=[Depends(require_api_key)])
+@limiter.limit("30/minute")
+def nb_save_product(request: Request, req: NbProductRequest):
+    barcode = normalize_barcode(req.barcode)
+    name = req.name.strip()
+    if not barcode:
+        raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
+    if not name:
+        raise HTTPException(status_code=400, detail={"error": "name requerido"})
+
+    with _db_lock:
+        conn = _db_connect()
+        conn.execute(
+            "INSERT INTO nb_products (barcode, name, brand) VALUES (?, ?, ?) "
+            "ON CONFLICT(barcode) DO UPDATE SET name = excluded.name, brand = excluded.brand",
+            (barcode, name, req.brand.strip()),
+        )
+        conn.commit()
+        conn.close()
+
+    log.info("NB product saved manually barcode=%s name=%s", barcode, name)
+    stock = _nb_get_stock(barcode)
+    return {"barcode": barcode, "name": name, "brand": req.brand.strip(), "stock": stock}
 
 @app.get("/api/notebooks/stock", dependencies=[Depends(require_api_key)])
 @limiter.limit("60/minute")
