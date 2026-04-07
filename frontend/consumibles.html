@@ -12,33 +12,39 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --red:      #ED1C24;
-      --dark:     #58595B;
-      --mid:      #7f8284;
-      --light:    #f3f3f3;
-      --border:   #e0e0e0;
-      --white:    #ffffff;
-      --shadow:   0 4px 20px rgba(0,0,0,0.08);
+      --red: #ED1C24;
+      --red-dark: #BA1017;
+      --dark: #58595B;
+      --ink: #2F3031;
+      --mid: #7F8284;
+      --light: #F4F3F1;
+      --border: rgba(88, 89, 91, 0.12);
+      --white: #FFFFFF;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.10);
+      --panel: rgba(255,255,255,0.84);
     }
 
     body {
       font-family: 'Barlow Condensed', system-ui, sans-serif;
       font-weight: 500;
-      background: var(--light);
-      color: var(--dark);
+      background:
+        radial-gradient(circle at top left, rgba(237, 28, 36, 0.10), transparent 32%),
+        linear-gradient(180deg, #FAF9F7 0%, var(--light) 100%);
+      color: var(--ink);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* ── Header ── */
     header {
-      background: var(--dark);
-      padding: 0 40px;
-      height: 64px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 72px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -49,29 +55,46 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
+      color: inherit;
     }
 
     .logo-img {
-      height: 36px;
+      height: 34px;
       width: auto;
       display: block;
     }
 
-    .header-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.45);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
+    .logo-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    /* ── Main layout ── */
+    .logo-kicker {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--mid);
+    }
+
+    .logo-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--dark);
+    }
+
     main {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 48px 20px;
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
     }
 
     .page-title {
@@ -93,9 +116,8 @@
       letter-spacing: 0.03em;
     }
 
-    /* ── Cards ── */
     .card {
-      background: var(--white);
+      background: rgba(255,255,255,0.88);
       box-shadow: var(--shadow);
       padding: 32px;
       width: 100%;
@@ -124,7 +146,6 @@
       flex-shrink: 0;
     }
 
-    /* ── Inputs ── */
     input[type="text"], input[type="search"] {
       font-family: inherit;
       font-size: 18px;
@@ -146,15 +167,17 @@
     input::placeholder { color: #b1bec5; }
 
     /* ── User dropdown ── */
-    ul {
+    #userList {
       list-style: none;
+      background: rgba(255,255,255,0.94);
       border: 2px solid var(--border);
-      margin-top: 4px;
+      margin-top: 6px;
       max-height: 220px;
       overflow-y: auto;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.08);
     }
 
-    li {
+    #userList li {
       padding: 12px 16px;
       border-top: 1px solid var(--border);
       cursor: pointer;
@@ -164,9 +187,9 @@
       transition: background .2s ease, color .2s ease;
     }
 
-    li:first-child { border-top: none; }
+    #userList li:first-child { border-top: none; }
 
-    li:hover {
+    #userList li:hover {
       background: var(--red);
       color: var(--white);
     }
@@ -176,27 +199,30 @@
       display: none;
       align-items: center;
       gap: 10px;
-      background: var(--dark);
-      color: var(--white);
       padding: 10px 16px;
       margin-top: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      background: var(--light);
+      border-left: 3px solid var(--red);
+      min-height: 60px;
     }
 
     .user-badge.visible { display: flex; }
 
     .user-badge span {
+      display: block;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: rgba(255,255,255,0.5);
+      color: var(--mid);
     }
 
-    .user-badge-name { font-size: 16px; }
+    .user-badge-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark);
+      margin-top: 2px;
+    }
 
     .badge-dot {
       width: 8px;
@@ -353,7 +379,7 @@
         height: 56px;
       }
 
-      .header-title { display: none; }
+      .btn-menu { left: 8px; }
 
       main {
         padding: 28px 16px;
@@ -480,6 +506,10 @@
     body.sidebar-open .layout-content { margin-left: 240px; }
 
     .btn-menu {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
       background: none;
       border: none;
       cursor: pointer;
@@ -487,7 +517,8 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      margin-right: 16px;
+      margin-right: 0;
+      z-index: 1;
     }
 
     .btn-menu span {
@@ -692,8 +723,11 @@
     <button class="btn-menu" id="btnMenu" aria-label="Menu"><span></span><span></span><span></span></button>
     <a class="logo" href="index.html">
       <img class="logo-img" src="/logo.png" alt="Akron" />
+      <span class="logo-copy">
+        <span class="logo-kicker">Sistema interno</span>
+        <span class="logo-title">IT Akron</span>
+      </span>
     </a>
-    <span class="header-title">Gestión de consumibles</span>
   </header>
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
