@@ -1,18 +1,24 @@
 # Consumibles — Akron IT
 
-Sistema interno para registrar la salida de consumibles y consultar el estado de discos rígidos, integrado con **GLPI** como backend de inventario.
+Sistema interno para registrar la salida de consumibles, consultar discos rígidos y gestionar stock local de notebooks y celulares, integrado con **GLPI** como backend de inventario.
 
 ---
 
 ## ¿Qué hace?
 
-El sistema tiene dos módulos principales:
+El sistema tiene cuatro módulos principales:
 
 ### Consumibles
 Permite registrar la entrega de un consumible (tóner, cartuchos, etc.) a un usuario. El operador busca al usuario, escanea el código de barras del producto y confirma la salida. El stock se descuenta automáticamente en GLPI.
 
 ### Discos
 Permite consultar si un disco rígido está instalado en alguna computadora, ingresando o escaneando el número de serie. Muestra el equipo asignado y el usuario correspondiente.
+
+### Notebooks
+Permite gestionar stock local por empresa para notebooks. Los equipos se pueden dar de alta manualmente y registrar ingresos o salidas desde una base SQLite local.
+
+### Celulares
+Permite gestionar stock local por empresa para celulares con la misma operatoria que notebooks. Comparte la misma SQLite, pero usa tablas separadas para no mezclar stock entre módulos.
 
 ---
 
@@ -87,12 +93,22 @@ Todos los endpoints (excepto `/health`) requieren el header `X-Api-Key`, que Ngi
 | `GET` | `/api/model/{barcode}` | Obtiene info de un modelo de consumible por código de barras |
 | `POST` | `/api/consume` | Registra la salida de un consumible a un usuario |
 | `GET` | `/api/disk/{serial}` | Consulta el estado de un disco rígido por número de serie |
+| `GET` | `/api/notebooks/lookup/{barcode}` | Busca una notebook en el stock local |
+| `POST` | `/api/notebooks/products` | Crea o actualiza un modelo de notebook |
+| `GET` | `/api/notebooks/stock` | Lista el stock actual de notebooks |
+| `POST` | `/api/notebooks/entry` | Registra ingreso de una notebook |
+| `POST` | `/api/notebooks/exit` | Registra salida de una notebook |
+| `GET` | `/api/cellphones/lookup/{barcode}` | Busca un celular en el stock local |
+| `POST` | `/api/cellphones/products` | Crea o actualiza un modelo de celular |
+| `GET` | `/api/cellphones/stock` | Lista el stock actual de celulares |
+| `POST` | `/api/cellphones/entry` | Registra ingreso de un celular |
+| `POST` | `/api/cellphones/exit` | Registra salida de un celular |
 
 ---
 
 ## Escáner de cámara
 
-Ambas páginas incluyen un escáner de códigos de barras por cámara con las siguientes funciones:
+Las páginas de consumibles, discos, notebooks y celulares incluyen un escáner de códigos de barras por cámara con las siguientes funciones:
 
 - Soporte para múltiples cámaras (se recuerda la última usada)
 - Linterna / antorcha (en dispositivos compatibles)
@@ -114,6 +130,8 @@ Ambas páginas incluyen un escáner de códigos de barras por cámara con las si
 ├── frontend/
 │   ├── index.html          # Módulo: Consumibles
 │   ├── discos.html         # Módulo: Discos
+│   ├── notebooks.html      # Módulo: Notebooks
+│   ├── celulares.html      # Módulo: Celulares
 │   └── logo.png
 ├── nginx/
 │   ├── default.conf.template   # Config de Nginx (API key inyectada en startup)

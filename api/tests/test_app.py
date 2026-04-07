@@ -132,6 +132,82 @@ def test_notebooks_exit_removes_zero_stock_row_from_database(client, api_headers
     assert row is None
 
 
+def test_cellphones_flow_save_lookup_entry_and_exit(client, api_headers):
+    save_response = client.post(
+        "/api/cellphones/products",
+        headers=api_headers,
+        json={"barcode": " CEL-001 ", "name": "Galaxy A55", "brand": "Samsung"},
+    )
+    assert save_response.status_code == 200
+
+    entry_response = client.post(
+        "/api/cellphones/entry",
+        headers=api_headers,
+        json={"barcode": "CEL-001", "company": "Akron"},
+    )
+    assert entry_response.status_code == 200
+    assert entry_response.json()["quantity"] == 1
+
+    lookup_response = client.get("/api/cellphones/lookup/CEL-001", headers=api_headers)
+    assert lookup_response.status_code == 200
+    assert lookup_response.json() == {
+        "barcode": "CEL-001",
+        "name": "Galaxy A55",
+        "brand": "Samsung",
+        "stock": [{"company": "Akron", "quantity": 1}],
+    }
+
+    exit_response = client.post(
+        "/api/cellphones/exit",
+        headers=api_headers,
+        json={"barcode": "CEL-001", "company": "Akron"},
+    )
+    assert exit_response.status_code == 200
+    assert exit_response.json()["quantity"] == 0
+
+
+def test_cellphones_and_notebooks_keep_independent_stock_in_same_sqlite(client, api_headers):
+    client.post(
+        "/api/notebooks/products",
+        headers=api_headers,
+        json={"barcode": "SHARED-01", "name": "ThinkPad E14", "brand": "Lenovo"},
+    )
+    client.post(
+        "/api/cellphones/products",
+        headers=api_headers,
+        json={"barcode": "SHARED-01", "name": "iPhone 13", "brand": "Apple"},
+    )
+
+    client.post(
+        "/api/notebooks/entry",
+        headers=api_headers,
+        json={"barcode": "SHARED-01", "company": "Akron"},
+    )
+    client.post(
+        "/api/cellphones/entry",
+        headers=api_headers,
+        json={"barcode": "SHARED-01", "company": "Tekron"},
+    )
+
+    notebooks_lookup = client.get("/api/notebooks/lookup/SHARED-01", headers=api_headers)
+    cellphones_lookup = client.get("/api/cellphones/lookup/SHARED-01", headers=api_headers)
+
+    assert notebooks_lookup.status_code == 200
+    assert notebooks_lookup.json() == {
+        "barcode": "SHARED-01",
+        "name": "ThinkPad E14",
+        "brand": "Lenovo",
+        "stock": [{"company": "Akron", "quantity": 1}],
+    }
+    assert cellphones_lookup.status_code == 200
+    assert cellphones_lookup.json() == {
+        "barcode": "SHARED-01",
+        "name": "iPhone 13",
+        "brand": "Apple",
+        "stock": [{"company": "Tekron", "quantity": 1}],
+    }
+
+
 def test_disk_lookup_returns_expanded_user_name(client, api_headers, api_module, monkeypatch):
     def fake_glpi_request(method, path, **kwargs):
         if path == "/search/Item_DeviceHardDrive":
