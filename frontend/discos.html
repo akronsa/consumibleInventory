@@ -355,6 +355,7 @@
       <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
     </div>
   </div>
+  <script src="/api.js"></script>
   <script src="/scanner.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -394,13 +395,11 @@
       searchDebounce = setTimeout(async () => {
         try {
           const r = await fetch(`/api/disk/${encodeURIComponent(val)}`);
-          if (r.status === 404) {
-            setMsg("No se encontró ningún disco con ese número de serie.", "err");
-          } else if (!r.ok) {
-            const j = await r.json();
-            setMsg(j.detail?.error || "Error al consultar.", "err");
+          const data = await readJsonResponse(r);
+          if (!r.ok) {
+            const apiError = getApiError(data, "Error al consultar el disco");
+            setMsg(apiError.message, "err");
           } else {
-            const data = await r.json();
             setResult(data);
             if (!data.installed) setMsg("Disco no instalado en ningún equipo.", "info");
           }
