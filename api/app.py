@@ -3,7 +3,7 @@ import os
 import time
 import sqlite3
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NoReturn, Optional, Tuple
 
 import logging
 import requests
@@ -75,6 +75,72 @@ _session_obtained_at: float = 0.0
 SESSION_MAX_AGE_SEC = int(os.environ.get("SESSION_MAX_AGE_SEC", str(8 * 60 * 60)))
 GLPI_TIMEOUT_SEC   = int(os.environ.get("GLPI_TIMEOUT_SEC", "30"))
 
+def glpi_error_response(
+    *,
+    message: str,
+    code: str,
+    status_code: int,
+    upstream_status: Optional[int] = None,
+    exc: Optional[Exception] = None,
+) -> HTTPException:
+    detail: Dict[str, Any] = {"error": message, "code": code}
+    if upstream_status is not None:
+        detail["upstream_status"] = upstream_status
+    if exc is not None:
+        log.error("GLPI proxy error code=%s upstream_status=%s: %s", code, upstream_status, exc)
+    return HTTPException(status_code=status_code, detail=detail)
+
+def raise_for_glpi_transport_error(exc: Exception) -> NoReturn:
+    if isinstance(exc, requests.Timeout):
+        raise glpi_error_response(
+            message="GLPI no respondio a tiempo",
+            code="glpi_timeout",
+            status_code=504,
+            exc=exc,
+        )
+    raise glpi_error_response(
+        message="No se pudo conectar con GLPI",
+        code="glpi_unavailable",
+        status_code=502,
+        exc=exc,
+    )
+
+def raise_for_glpi_http_error(status_code: int) -> NoReturn:
+    if status_code in (401, 403):
+        raise glpi_error_response(
+            message="Autenticacion con GLPI rechazada",
+            code="glpi_auth_failed",
+            status_code=502,
+            upstream_status=status_code,
+        )
+    if status_code >= 500:
+        raise glpi_error_response(
+            message="GLPI devolvio un error interno",
+            code="glpi_upstream_error",
+            status_code=502,
+            upstream_status=status_code,
+        )
+    raise glpi_error_response(
+        message="GLPI rechazo la solicitud",
+        code="glpi_request_rejected",
+        status_code=502,
+        upstream_status=status_code,
+    )
+
+def parse_glpi_json(response: requests.Response) -> Any:
+    if not response.text:
+        return None
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise glpi_error_response(
+            message="GLPI devolvio una respuesta invalida",
+            code="glpi_invalid_response",
+            status_code=502,
+            upstream_status=response.status_code,
+            exc=exc,
+        )
+
 def _init_session() -> str:
     """Init legacy session usando App-Token + Authorization: user_token"""
     url = f"{API}/initSession"
@@ -82,14 +148,23 @@ def _init_session() -> str:
         "App-Token": GLPI_APP_TOKEN,
         "Authorization": f"user_token {GLPI_USER_TOKEN}",
     }
-    r = _http_session.post(url, headers=headers, timeout=GLPI_TIMEOUT_SEC)
-    if not r.ok:
-        raise RuntimeError(f"initSession failed {r.status_code}: {r.text}")
+    try:
+        r: requests.Response = _http_session.post(url, headers=headers, timeout=GLPI_TIMEOUT_SEC)
+    except requests.RequestException as exc:
+        raise_for_glpi_transport_error(exc)
 
-    j = r.json()
+    if not r.ok:
+        raise_for_glpi_http_error(r.status_code)
+
+    j = parse_glpi_json(r)
     token = j.get("session_token") or j.get("sessionToken")
     if not token:
-        raise RuntimeError(f"initSession: no session_token en respuesta: {j}")
+        raise glpi_error_response(
+            message="GLPI no devolvio session_token",
+            code="glpi_invalid_response",
+            status_code=502,
+            upstream_status=r.status_code,
+        )
     log.info("GLPI session iniciada")
     return token
 
@@ -123,26 +198,28 @@ def glpi_request(
 ) -> Tuple[Any, Dict[str, str]]:
     url = f"{API}{path if path.startswith('/') else '/' + path}"
 
-    def do(token: str):
+    def do(token: str) -> requests.Response:
         headers = glpi_headers(token)
         if json_body is not None:
             headers["Content-Type"] = "application/json"
         if range_header:
             headers["Range"] = range_header
-        return _http_session.request(method, url, headers=headers, params=params, json=json_body, timeout=GLPI_TIMEOUT_SEC)
+        try:
+            return _http_session.request(method, url, headers=headers, params=params, json=json_body, timeout=GLPI_TIMEOUT_SEC)
+        except requests.RequestException as exc:
+            raise_for_glpi_transport_error(exc)
 
     token = get_session_token()
-    r = do(token)
+    r: requests.Response = do(token)
 
     if r.status_code in (401, 403):
         token2 = get_session_token(force_refresh=True)
         r = do(token2)
 
     if not r.ok:
-        log.error("GLPI error %s: %s", r.status_code, r.text[:200])
-        raise HTTPException(status_code=502, detail={"error": f"GLPI {r.status_code}: {r.text}"})
+        raise_for_glpi_http_error(r.status_code)
 
-    data = r.json() if r.text else None
+    data = parse_glpi_json(r)
     headers_out = {k.lower(): v for k, v in r.headers.items()}
     return data, headers_out
 

@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import requests
 from fastapi.testclient import TestClient
 
 
@@ -171,3 +172,65 @@ def test_disk_lookup_reports_not_installed_when_item_is_not_a_computer(client, a
 
     assert response.status_code == 200
     assert response.json() == {"serial": "SN404", "installed": False, "disk": "WD Blue"}
+
+
+def test_glpi_request_timeout_returns_gateway_timeout(api_module, monkeypatch):
+    monkeypatch.setattr(api_module, "get_session_token", lambda force_refresh=False: "session-token")
+
+    def fake_request(*args, **kwargs):
+        raise requests.Timeout("timeout")
+
+    monkeypatch.setattr(api_module._http_session, "request", fake_request)
+
+    with pytest.raises(api_module.HTTPException) as exc_info:
+        api_module.glpi_request("GET", "/Computer/1")
+
+    assert exc_info.value.status_code == 504
+    assert exc_info.value.detail == {"error": "GLPI no respondio a tiempo", "code": "glpi_timeout"}
+
+
+def test_glpi_request_auth_failure_returns_stable_error(api_module, monkeypatch):
+    monkeypatch.setattr(api_module, "get_session_token", lambda force_refresh=False: "session-token")
+
+    class FakeResponse:
+        ok = False
+        status_code = 401
+        text = "unauthorized"
+        headers = {}
+
+    monkeypatch.setattr(api_module._http_session, "request", lambda *args, **kwargs: FakeResponse())
+
+    with pytest.raises(api_module.HTTPException) as exc_info:
+        api_module.glpi_request("GET", "/Computer/1")
+
+    assert exc_info.value.status_code == 502
+    assert exc_info.value.detail == {
+        "error": "Autenticacion con GLPI rechazada",
+        "code": "glpi_auth_failed",
+        "upstream_status": 401,
+    }
+
+
+def test_glpi_request_invalid_json_returns_bad_gateway(api_module, monkeypatch):
+    monkeypatch.setattr(api_module, "get_session_token", lambda force_refresh=False: "session-token")
+
+    class FakeResponse:
+        ok = True
+        status_code = 200
+        text = "not-json"
+        headers = {}
+
+        def json(self):
+            raise ValueError("invalid json")
+
+    monkeypatch.setattr(api_module._http_session, "request", lambda *args, **kwargs: FakeResponse())
+
+    with pytest.raises(api_module.HTTPException) as exc_info:
+        api_module.glpi_request("GET", "/Computer/1")
+
+    assert exc_info.value.status_code == 502
+    assert exc_info.value.detail == {
+        "error": "GLPI devolvio una respuesta invalida",
+        "code": "glpi_invalid_response",
+        "upstream_status": 200,
+    }
