@@ -236,15 +236,14 @@ def test_glpi_request_invalid_json_returns_bad_gateway(api_module, monkeypatch):
     }
 
 
-def test_get_model_stock_falls_back_to_returned_consumable_instances(api_module, monkeypatch):
+def test_get_model_stock_counts_ids_with_null_date_out(api_module, monkeypatch):
     def fake_glpi_request(method, path, **kwargs):
-        if path == "/ConsumableItem/10":
-            return ({"id": 10, "name": "Toner Negro"}, {})
         if path == "/ConsumableItem/10/Consumable":
             return (
                 [
                     {"id": 1, "items_id": "0", "itemtype": "", "date_out": "2026-04-07"},
-                    {"id": 2, "items_id": "17", "itemtype": "User", "date_out": "2026-04-08"},
+                    {"id": 2, "items_id": "17", "itemtype": "User", "date_out": None},
+                    {"id": 3, "items_id": "0", "itemtype": "", "date_out": ""},
                 ],
                 {},
             )
@@ -252,10 +251,10 @@ def test_get_model_stock_falls_back_to_returned_consumable_instances(api_module,
 
     monkeypatch.setattr(api_module, "glpi_request", fake_glpi_request)
 
-    assert api_module.get_model_stock(10) == 1
+    assert api_module.get_model_stock(10) == 2
 
 
-def test_get_model_by_ref_exposes_real_stock_when_glpi_returns_it(api_module, monkeypatch):
+def test_get_model_by_ref_exposes_instance_count_stock(api_module, monkeypatch):
     def fake_glpi_request(method, path, **kwargs):
         if path == "/ConsumableItem/":
             return (
@@ -265,8 +264,16 @@ def test_get_model_by_ref_exposes_real_stock_when_glpi_returns_it(api_module, mo
                         "name": "Cartucho Cyan",
                         "ref": "CY-22",
                         "consumableitemtypes_id": "Toner",
-                        "stock": 7,
                     }
+                ],
+                {},
+            )
+        if path == "/ConsumableItem/22/Consumable":
+            return (
+                [
+                    {"id": 10, "date_out": None},
+                    {"id": 11, "date_out": None},
+                    {"id": 12, "date_out": "2026-04-07"},
                 ],
                 {},
             )
@@ -281,7 +288,7 @@ def test_get_model_by_ref_exposes_real_stock_when_glpi_returns_it(api_module, mo
         "name": "Cartucho Cyan",
         "ref": "CY-22",
         "type": "Toner",
-        "stock": 7,
+        "stock": 2,
     }
 
 
@@ -298,13 +305,34 @@ def test_consume_returns_remaining_from_model_stock(api_module, client, api_head
         },
     )
 
+    calls = {"instances": 0}
+
     def fake_glpi_request(method, path, **kwargs):
         if method == "GET" and path == "/ConsumableItem/33/Consumable":
-            return ([{"id": 99, "items_id": "0", "itemtype": "", "date_out": ""}], {})
+            calls["instances"] += 1
+            if calls["instances"] == 1:
+                return (
+                    [
+                        {"id": 99, "date_out": None},
+                        {"id": 100, "date_out": None},
+                        {"id": 101, "date_out": None},
+                        {"id": 102, "date_out": None},
+                        {"id": 103, "date_out": None},
+                    ],
+                    {},
+                )
+            return (
+                [
+                    {"id": 100, "date_out": None},
+                    {"id": 101, "date_out": None},
+                    {"id": 102, "date_out": None},
+                    {"id": 103, "date_out": None},
+                    {"id": 99, "date_out": "2026-04-07"},
+                ],
+                {},
+            )
         if method == "PUT" and path == "/ConsumableItem/33/Consumable/99":
             return ({"ok": True}, {})
-        if method == "GET" and path == "/ConsumableItem/33":
-            return ({"id": 33, "stock": 4}, {})
         raise AssertionError(f"Unexpected GLPI call: {method} {path}")
 
     monkeypatch.setattr(api_module, "glpi_request", fake_glpi_request)

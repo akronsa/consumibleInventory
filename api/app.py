@@ -243,30 +243,9 @@ def get_dropdown_text(value: Any) -> Optional[str]:
                 return text.strip()
     return None
 
-def get_int_value(value: Any) -> Optional[int]:
-    if isinstance(value, bool):
-        return int(value)
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float):
-        return int(value)
-    if isinstance(value, str):
-        text = value.strip()
-        if not text:
-            return None
-        try:
-            return int(float(text))
-        except ValueError:
-            return None
-    return None
-
 def is_available(c: Dict[str, Any]) -> bool:
-    items_id = c.get("items_id")
-    itemtype = c.get("itemtype")
-    return (
-        (items_id is None or str(items_id) in ("0", "0.0", "")) and
-        (itemtype is None or str(itemtype).strip() in ("", "0", "0.0"))
-    )
+    date_out = c.get("date_out")
+    return date_out is None or str(date_out).strip() in ("", "NULL", "null")
 
 def today_yyyy_mm_dd() -> str:
     import datetime as dt
@@ -280,32 +259,19 @@ _model_cache_lock = threading.Lock()
 _model_cache: Dict[str, Dict[str, Any]] = {}
 MODEL_CACHE_TTL_SEC = int(os.environ.get("MODEL_CACHE_TTL_SEC", str(10 * 60)))
 
-def extract_model_stock(item: Dict[str, Any]) -> Optional[int]:
-    for key in ("stock", "number", "quantity", "count", "available"):
-        stock = get_int_value(item.get(key))
-        if stock is not None:
-            return stock
-    return None
-
 def get_consumable_instances(model_id: int) -> List[Dict[str, Any]]:
     data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
     return data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
 
 def count_available_consumables(model_id: int) -> int:
-    return len([item for item in get_consumable_instances(model_id) if is_available(item)])
+    available_ids = {
+        item.get("id")
+        for item in get_consumable_instances(model_id)
+        if item.get("id") is not None and is_available(item)
+    }
+    return len(available_ids)
 
-def get_model_stock(model_id: int, *, cached_item: Optional[Dict[str, Any]] = None) -> int:
-    if cached_item is not None:
-        cached_stock = extract_model_stock(cached_item)
-        if cached_stock is not None:
-            return cached_stock
-
-    data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}", params={"expand_dropdowns": 1})
-    if isinstance(data, dict):
-        direct_stock = extract_model_stock(data)
-        if direct_stock is not None:
-            return direct_stock
-
+def get_model_stock(model_id: int) -> int:
     return count_available_consumables(model_id)
 
 def get_model_by_ref(ref: str, *, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
@@ -328,7 +294,7 @@ def get_model_by_ref(ref: str, *, force_refresh: bool = False) -> Optional[Dict[
         "name": found.get("name"),
         "ref": found.get("ref", ref),
         "type": found.get("consumableitemtypes_id"),
-        "stock": get_model_stock(model_id, cached_item=found),
+        "stock": get_model_stock(model_id),
     }
     with _model_cache_lock:
         _model_cache[ref] = {"ts": now, "val": val}
