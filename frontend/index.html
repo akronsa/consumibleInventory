@@ -83,164 +83,38 @@
       color: var(--dark);
     }
 
-    .header-pill {
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.75);
-      padding: 10px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: var(--mid);
-      backdrop-filter: blur(10px);
-    }
-
     main {
       width: 100%;
       max-width: 1240px;
       margin: 0 auto;
-      padding: 18px 28px 56px;
+      padding: 24px 28px 56px;
       flex: 1;
     }
 
-    .hero {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(135deg, #58595B 0%, #3D3E40 62%, #2F3031 100%);
-      color: var(--white);
-      padding: 38px 40px;
-      box-shadow: var(--hero-shadow);
-      margin-bottom: 24px;
-    }
-
-    .hero::before {
-      content: "";
-      position: absolute;
-      right: -90px;
-      top: -90px;
-      width: 260px;
-      height: 260px;
-      background: radial-gradient(circle, rgba(237, 28, 36, 0.28) 0%, rgba(237, 28, 36, 0) 72%);
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: auto 0 0 auto;
-      width: 220px;
-      height: 6px;
-      background: linear-gradient(90deg, transparent 0%, var(--red) 100%);
-    }
-
-    .hero-grid {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
-      gap: 30px;
-      align-items: end;
-    }
-
-    .hero-kicker {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.24em;
-      color: rgba(255,255,255,0.62);
-      margin-bottom: 10px;
-    }
-
-    .hero-title {
-      font-size: 64px;
-      line-height: 0.95;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      max-width: 680px;
-      margin-bottom: 16px;
-    }
-
-    .hero-text {
-      font-size: 20px;
-      line-height: 1.3;
-      color: rgba(255,255,255,0.74);
-      max-width: 620px;
-    }
-
-    .hero-panel {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      padding: 18px 20px;
-      backdrop-filter: blur(6px);
-    }
-
-    .hero-panel-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 14px;
-    }
-
-    .hero-panel ul {
-      list-style: none;
-      display: grid;
-      gap: 10px;
-    }
-
-    .hero-panel li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      font-size: 17px;
-      color: rgba(255,255,255,0.9);
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.10);
-    }
-
-    .hero-panel li:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-
-    .hero-panel span {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: rgba(255,255,255,0.42);
-      flex-shrink: 0;
-    }
-
     .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      margin: 18px 0 14px;
+      margin: 8px 0 18px;
     }
 
     .section-title {
-      font-size: 30px;
+      font-size: 44px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--dark);
+      margin-bottom: 6px;
     }
 
     .section-copy {
-      font-size: 16px;
+      font-size: 18px;
       color: var(--mid);
-      max-width: 560px;
+      max-width: 680px;
     }
 
     .module-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 16px;
-      margin-bottom: 26px;
+      margin-bottom: 18px;
     }
 
     .module-card {
@@ -332,51 +206,6 @@
       height: 16px;
     }
 
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .quick-card {
-      background: rgba(255,255,255,0.72);
-      border: 1px solid var(--line);
-      padding: 18px 18px 16px;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color .2s ease, background .2s ease, transform .2s ease;
-    }
-
-    .quick-card:hover {
-      border-color: rgba(237,28,36,0.35);
-      background: var(--white);
-      transform: translateY(-2px);
-    }
-
-    .quick-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      color: var(--mid);
-      margin-bottom: 10px;
-    }
-
-    .quick-title {
-      font-size: 22px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: var(--dark);
-      margin-bottom: 8px;
-    }
-
-    .quick-copy {
-      font-size: 15px;
-      line-height: 1.25;
-      color: var(--mid);
-    }
-
     footer {
       text-align: center;
       padding: 26px 20px 34px;
@@ -388,14 +217,8 @@
     }
 
     @media (max-width: 1100px) {
-      .hero-grid,
-      .module-grid,
-      .quick-grid {
+      .module-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .hero-title {
-        font-size: 54px;
       }
     }
 
@@ -410,35 +233,20 @@
         padding-top: 18px;
       }
 
-      .header-pill {
-        display: none;
-      }
-
-      .hero {
-        padding: 28px 22px;
-      }
-
-      .hero-grid,
-      .module-grid,
-      .quick-grid {
+      .module-grid {
         grid-template-columns: 1fr;
-      }
-
-      .hero-title {
-        font-size: 42px;
-      }
-
-      .hero-text {
-        font-size: 18px;
-      }
-
-      .section-head {
-        flex-direction: column;
-        align-items: flex-start;
       }
 
       .brand-title {
         font-size: 20px;
+      }
+
+      .section-title {
+        font-size: 34px;
+      }
+
+      .section-copy {
+        font-size: 17px;
       }
     }
   </style>
@@ -452,34 +260,14 @@
         <div class="brand-title">IT Akron</div>
       </div>
     </a>
-    <div class="header-pill">Mesa operativa</div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-grid">
-        <div>
-          <div class="hero-kicker">Punto de entrada</div>
-          <h1 class="hero-title">Herramientas para operar sin rodeos</h1>
-          <p class="hero-text">Entrá directo al módulo correcto según la tarea que tengas enfrente: asignar insumos, consultar discos o mover stock local de equipos.</p>
-        </div>
-        <aside class="hero-panel">
-          <div class="hero-panel-label">Qué podés hacer acá</div>
-          <ul>
-            <li>Asignar consumibles a usuarios <span>GLPI</span></li>
-            <li>Consultar ubicación de discos <span>Inventario</span></li>
-            <li>Mover stock de notebooks <span>SQLite local</span></li>
-            <li>Gestionar stock de celulares <span>SQLite local</span></li>
-          </ul>
-        </aside>
-      </div>
-    </section>
-
     <section>
       <div class="section-head">
         <div>
           <h2 class="section-title">Módulos</h2>
-          <p class="section-copy">Cada acceso abre una herramienta específica. La home queda para entrar rápido; la navegación lateral sigue quedando dentro de cada módulo.</p>
+          <p class="section-copy">Elegí la herramienta que necesitás y entrá directo al flujo correspondiente.</p>
         </div>
       </div>
 
@@ -538,38 +326,6 @@
             </div>
           </div>
           <div class="module-cta">Abrir módulo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg></div>
-        </a>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">Accesos rápidos</h2>
-          <p class="section-copy">Atajos pensados por intención de uso, no por estructura técnica.</p>
-        </div>
-      </div>
-
-      <div class="quick-grid">
-        <a class="quick-card" href="consumibles.html">
-          <div class="quick-label">Salida</div>
-          <div class="quick-title">Registrar consumible</div>
-          <div class="quick-copy">Entrá directo al flujo para asignar un insumo a un usuario.</div>
-        </a>
-        <a class="quick-card" href="discos.html">
-          <div class="quick-label">Consulta</div>
-          <div class="quick-title">Buscar disco</div>
-          <div class="quick-copy">Ideal para soporte cuando necesitás ubicar rápido un serial.</div>
-        </a>
-        <a class="quick-card" href="notebooks.html">
-          <div class="quick-label">Stock</div>
-          <div class="quick-title">Mover notebooks</div>
-          <div class="quick-copy">Registrá ingresos o salidas por empresa sin pasar por GLPI.</div>
-        </a>
-        <a class="quick-card" href="celulares.html">
-          <div class="quick-label">Stock</div>
-          <div class="quick-title">Mover celulares</div>
-          <div class="quick-copy">Administrá equipos móviles con la misma operatoria del stock local.</div>
         </a>
       </div>
     </section>
