@@ -820,7 +820,7 @@
       $("barcode").focus();
     }
 
-    function setProduct(name, type) {
+    function setProduct(name, type, stock) {
       const info = $("productInfo");
       if (!name) {
         info.classList.remove("visible");
@@ -831,7 +831,7 @@
       }
       $("productName").textContent = name;
       $("productType").textContent = type || "";
-      $("productStock").textContent = "";
+      $("productStock").textContent = Number.isFinite(stock) ? `Stock: ${stock}` : "";
       info.classList.add("visible");
     }
 
@@ -852,7 +852,7 @@
           const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
           if (r.ok) {
             const model = await r.json();
-            setProduct(model.name, model.type);
+            setProduct(model.name, model.type, model.stock);
             setMsg("");
           } else if (r.status === 404) {
             setProduct(null);

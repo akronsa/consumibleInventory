@@ -245,13 +245,7 @@ def get_dropdown_text(value: Any) -> Optional[str]:
 
 def is_available(c: Dict[str, Any]) -> bool:
     date_out = c.get("date_out")
-    items_id = c.get("items_id")
-    itemtype = c.get("itemtype")
-    return (
-        (date_out is None or date_out == "") and
-        (items_id is None or str(items_id) in ("0", "0.0", "")) and
-        (itemtype is None or itemtype == "")
-    )
+    return date_out is None or str(date_out).strip() in ("", "NULL", "null")
 
 def today_yyyy_mm_dd() -> str:
     import datetime as dt
@@ -265,11 +259,26 @@ _model_cache_lock = threading.Lock()
 _model_cache: Dict[str, Dict[str, Any]] = {}
 MODEL_CACHE_TTL_SEC = int(os.environ.get("MODEL_CACHE_TTL_SEC", str(10 * 60)))
 
-def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
+def get_consumable_instances(model_id: int) -> List[Dict[str, Any]]:
+    data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
+    return data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
+
+def count_available_consumables(model_id: int) -> int:
+    available_ids = {
+        item.get("id")
+        for item in get_consumable_instances(model_id)
+        if item.get("id") is not None and is_available(item)
+    }
+    return len(available_ids)
+
+def get_model_stock(model_id: int) -> int:
+    return count_available_consumables(model_id)
+
+def get_model_by_ref(ref: str, *, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
     now = time.time()
     with _model_cache_lock:
         cached = _model_cache.get(ref)
-        if cached and (now - cached["ts"]) < MODEL_CACHE_TTL_SEC:
+        if not force_refresh and cached and (now - cached["ts"]) < MODEL_CACHE_TTL_SEC:
             return cached["val"]
 
     data, _ = glpi_request("GET", "/ConsumableItem/", params={"expand_dropdowns": 1}, range_header="0-9999")
@@ -279,7 +288,14 @@ def get_model_by_ref(ref: str) -> Optional[Dict[str, Any]]:
     if not found:
         return None
 
-    val = {"modelId": int(found["id"]), "name": found.get("name"), "ref": found.get("ref", ref), "type": found.get("consumableitemtypes_id")}
+    model_id = int(found["id"])
+    val = {
+        "modelId": model_id,
+        "name": found.get("name"),
+        "ref": found.get("ref", ref),
+        "type": found.get("consumableitemtypes_id"),
+        "stock": get_model_stock(model_id),
+    }
     with _model_cache_lock:
         _model_cache[ref] = {"ts": now, "val": val}
     return val
@@ -546,8 +562,7 @@ def consume(request: Request, req: ConsumeRequest):
     model_id = model["modelId"]
 
     with _consume_lock:
-        data, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
-        items: List[Dict[str, Any]] = data if isinstance(data, list) else (data.get("data", []) if isinstance(data, dict) else [])
+        items = get_consumable_instances(model_id)
 
         candidates = [c for c in items if is_available(c)]
         if not candidates:
@@ -565,16 +580,20 @@ def consume(request: Request, req: ConsumeRequest):
                     f"/ConsumableItem/{model_id}/Consumable/{consumable_id}",
                     json_body={"input": {"items_id": str(req.user_id), "itemtype": "User", "date_out": date_out}},
                 )
-                data_stock, _ = glpi_request("GET", f"/ConsumableItem/{model_id}/Consumable", params={"range": "0-999"})
-                all_items = data_stock if isinstance(data_stock, list) else data_stock.get("data", [])
-                remaining = len([i for i in all_items if is_available(i)])
+                remaining = get_model_stock(model_id)
+                refreshed_model = get_model_by_ref(barcode, force_refresh=True) or model
                 log.info(
                     "CONSUME user_id=%s barcode=%s model=%s consumable_id=%s remaining=%s",
                     req.user_id, barcode, model.get("name"), consumable_id, remaining,
                 )
                 return {
                     "ok": True,
-                    "model": {"id": model_id, "name": model.get("name"), "ref": model.get("ref")},
+                    "model": {
+                        "id": model_id,
+                        "name": refreshed_model.get("name"),
+                        "ref": refreshed_model.get("ref"),
+                        "stock": remaining,
+                    },
                     "consumable_id": consumable_id,
                     "date_out": date_out,
                     "remaining": remaining,
