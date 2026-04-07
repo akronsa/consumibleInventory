@@ -234,3 +234,87 @@ def test_glpi_request_invalid_json_returns_bad_gateway(api_module, monkeypatch):
         "code": "glpi_invalid_response",
         "upstream_status": 200,
     }
+
+
+def test_get_model_stock_falls_back_to_returned_consumable_instances(api_module, monkeypatch):
+    def fake_glpi_request(method, path, **kwargs):
+        if path == "/ConsumableItem/10":
+            return ({"id": 10, "name": "Toner Negro"}, {})
+        if path == "/ConsumableItem/10/Consumable":
+            return (
+                [
+                    {"id": 1, "items_id": "0", "itemtype": "", "date_out": "2026-04-07"},
+                    {"id": 2, "items_id": "17", "itemtype": "User", "date_out": "2026-04-08"},
+                ],
+                {},
+            )
+        raise AssertionError(f"Unexpected GLPI call: {method} {path}")
+
+    monkeypatch.setattr(api_module, "glpi_request", fake_glpi_request)
+
+    assert api_module.get_model_stock(10) == 1
+
+
+def test_get_model_by_ref_exposes_real_stock_when_glpi_returns_it(api_module, monkeypatch):
+    def fake_glpi_request(method, path, **kwargs):
+        if path == "/ConsumableItem/":
+            return (
+                [
+                    {
+                        "id": 22,
+                        "name": "Cartucho Cyan",
+                        "ref": "CY-22",
+                        "consumableitemtypes_id": "Toner",
+                        "stock": 7,
+                    }
+                ],
+                {},
+            )
+        raise AssertionError(f"Unexpected GLPI call: {method} {path}")
+
+    monkeypatch.setattr(api_module, "glpi_request", fake_glpi_request)
+
+    model = api_module.get_model_by_ref("CY-22", force_refresh=True)
+
+    assert model == {
+        "modelId": 22,
+        "name": "Cartucho Cyan",
+        "ref": "CY-22",
+        "type": "Toner",
+        "stock": 7,
+    }
+
+
+def test_consume_returns_remaining_from_model_stock(api_module, client, api_headers, monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "get_model_by_ref",
+        lambda ref, force_refresh=False: {
+            "modelId": 33,
+            "name": "Toner 85A",
+            "ref": ref,
+            "type": "Toner",
+            "stock": 4 if force_refresh else 5,
+        },
+    )
+
+    def fake_glpi_request(method, path, **kwargs):
+        if method == "GET" and path == "/ConsumableItem/33/Consumable":
+            return ([{"id": 99, "items_id": "0", "itemtype": "", "date_out": ""}], {})
+        if method == "PUT" and path == "/ConsumableItem/33/Consumable/99":
+            return ({"ok": True}, {})
+        if method == "GET" and path == "/ConsumableItem/33":
+            return ({"id": 33, "stock": 4}, {})
+        raise AssertionError(f"Unexpected GLPI call: {method} {path}")
+
+    monkeypatch.setattr(api_module, "glpi_request", fake_glpi_request)
+
+    response = client.post(
+        "/api/consume",
+        headers=api_headers,
+        json={"user_id": 123, "barcode": "TN-85A"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["remaining"] == 4
+    assert response.json()["model"] == {"id": 33, "name": "Toner 85A", "ref": "TN-85A", "stock": 4}
