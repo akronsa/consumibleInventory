@@ -791,6 +791,7 @@
     </div>
   </div>
 
+  <script src="/api.js"></script>
   <script src="/scanner.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -852,11 +853,18 @@
           if (r.ok) {
             const model = await r.json();
             setProduct(model.name, model.type);
-          } else {
+            setMsg("");
+          } else if (r.status === 404) {
             setProduct(null);
+          } else {
+            const payload = await readJsonResponse(r);
+            const apiError = getApiError(payload, "Error al consultar el producto");
+            setProduct(null);
+            setMsg(apiError.message, "err");
           }
         } catch (e) {
           setProduct(null);
+          setMsg("Error de conexión", "err");
         } finally {
           $("spinner").classList.remove("visible");
         }
@@ -891,11 +899,10 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
         });
-        const j = await r.json();
+        const j = await readJsonResponse(r);
         if (!r.ok) {
-          const detail = j.detail;
-          const errMsg = typeof detail === "object" ? (detail.error || "Error") : (detail || "Error");
-          setMsg(errMsg, "err");
+          const apiError = getApiError(j, "No se pudo registrar la salida");
+          setMsg(apiError.message, "err");
         } else {
           setMsg(`Asignado: ${j.model?.name}  —  Quedan: ${j.remaining}`, "ok");
           setTimeout(() => { if ($("msg").classList.contains("ok")) setMsg(""); }, 4000);
@@ -920,8 +927,8 @@
       debounce = setTimeout(async () => {
         try {
           const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+          const data = await readJsonResponse(r);
           if (r.ok) {
-            const data = await r.json();
             const ul = $("userList");
             ul.innerHTML = "";
             (data.results || []).forEach(u => {
@@ -931,8 +938,15 @@
               ul.appendChild(li);
             });
             ul.hidden = (data.results || []).length === 0;
+          } else {
+            const apiError = getApiError(data, "No se pudo buscar usuarios");
+            $("userList").hidden = true;
+            setMsg(apiError.message, "err");
           }
-        } catch (e) {}
+        } catch (e) {
+          $("userList").hidden = true;
+          setMsg("Error de conexión", "err");
+        }
       }, 300);
     });
 

@@ -713,6 +713,7 @@
     </div>
   </div>
 
+  <script src="/api.js"></script>
   <script src="/scanner.js"></script>
   <script>
     const $ = (id) => document.getElementById(id);
@@ -786,12 +787,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ barcode: currentBarcode, name, brand }),
         });
-        const j = await r.json();
+        const j = await readJsonResponse(r);
         if (r.ok) {
           setProduct(j);
           setMsg("");
         } else {
-          setMsg(j.detail?.error || "Error al guardar", "err");
+          const apiError = getApiError(j, "Error al guardar el producto");
+          setMsg(apiError.message, "err");
         }
       } catch (e) {
         setMsg("Error de conexión", "err");
@@ -815,7 +817,7 @@
       barcodeDebounce = setTimeout(async () => {
         try {
           const r = await fetch(`/api/notebooks/lookup/${encodeURIComponent(code)}`);
-          const j = await r.json().catch(() => ({}));
+          const j = await readJsonResponse(r);
           if (r.ok) {
             setProduct(j);
             renderStockForProduct(j.stock || []);
@@ -823,8 +825,8 @@
             showManualForm(true);
             setMsg("");
           } else {
-            const err = j.detail?.error || j.detail || "Error al consultar el producto";
-            setMsg(err, "err");
+            const apiError = getApiError(j, "Error al consultar el producto");
+            setMsg(apiError.message, "err");
           }
         } catch (e) {
           setMsg("Error de conexión", "err");
@@ -856,10 +858,10 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ barcode: currentBarcode, company: selectedCompany }),
         });
-        const j = await r.json();
+        const j = await readJsonResponse(r);
         if (!r.ok) {
-          const err = j.detail?.error || j.detail || "Error";
-          setMsg(err, "err");
+          const apiError = getApiError(j, "No se pudo registrar el movimiento");
+          setMsg(apiError.message, "err");
         } else {
           const verb = direction === "entry" ? "Ingreso registrado" : "Salida registrada";
           setMsg(`${verb} — ${j.product.name} · ${selectedCompany} · Stock: ${j.quantity}`, "ok");
@@ -881,8 +883,12 @@
     async function loadStock() {
       try {
         const r = await fetch("/api/notebooks/stock");
-        if (!r.ok) return;
-        const rows = await r.json();
+        const rows = await readJsonResponse(r);
+        if (!r.ok) {
+          const apiError = getApiError(rows, "No se pudo cargar el stock");
+          setMsg(apiError.message, "err");
+          return;
+        }
         renderStock(rows);
       } catch (_) {}
     }
