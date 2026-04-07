@@ -145,6 +145,17 @@ def glpi_request(
 def normalize_barcode(s: Any) -> str:
     return str(s or "").strip()
 
+def get_dropdown_text(value: Any) -> Optional[str]:
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    if isinstance(value, dict):
+        for key in ("name", "completename", "text", "value"):
+            text = value.get(key)
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+    return None
+
 def is_available(c: Dict[str, Any]) -> bool:
     date_out = c.get("date_out")
     items_id = c.get("items_id")
@@ -505,6 +516,11 @@ def get_disk_info(request: Request, serial: str):
         return {"serial": serial, "installed": False, "disk": disk_model}
 
     comp, _ = glpi_request("GET", f"/Computer/{computer_id}", params={"expand_dropdowns": 1})
+    user_name = (
+        get_dropdown_text(comp.get("users_id_dropdown"))
+        or get_dropdown_text(comp.get("_users_id"))
+        or get_dropdown_text(comp.get("users_id"))
+    )
     return {
         "serial": serial,
         "installed": True,
@@ -512,6 +528,6 @@ def get_disk_info(request: Request, serial: str):
         "computer": {
             "id": computer_id,
             "name": comp.get("name"),
-            "user": comp.get("users_id") or None,
+            "user": user_name,
         },
     }

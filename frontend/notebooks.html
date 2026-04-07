@@ -809,13 +809,16 @@
       barcodeDebounce = setTimeout(async () => {
         try {
           const r = await fetch(`/api/notebooks/lookup/${encodeURIComponent(code)}`);
-          const j = await r.json();
+          const j = await r.json().catch(() => ({}));
           if (r.ok) {
             setProduct(j);
             renderStockForProduct(j.stock || []);
-          } else {
+          } else if (r.status === 404) {
             showManualForm(true);
             setMsg("");
+          } else {
+            const err = j.detail?.error || j.detail || "Error al consultar el producto";
+            setMsg(err, "err");
           }
         } catch (e) {
           setMsg("Error de conexión", "err");
