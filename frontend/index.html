@@ -12,977 +12,569 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --red:      #ED1C24;
-      --dark:     #58595B;
-      --mid:      #7f8284;
-      --light:    #f3f3f3;
-      --border:   #e0e0e0;
-      --white:    #ffffff;
-      --shadow:   0 4px 20px rgba(0,0,0,0.08);
+      --red: #ED1C24;
+      --red-dark: #BA1017;
+      --dark: #58595B;
+      --ink: #2F3031;
+      --mid: #7F8284;
+      --light: #F4F3F1;
+      --white: #FFFFFF;
+      --line: rgba(88, 89, 91, 0.12);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.10);
+      --hero-shadow: 0 30px 80px rgba(0, 0, 0, 0.14);
     }
 
     body {
       font-family: 'Barlow Condensed', system-ui, sans-serif;
       font-weight: 500;
-      background: var(--light);
-      color: var(--dark);
+      background:
+        radial-gradient(circle at top left, rgba(237, 28, 36, 0.10), transparent 32%),
+        linear-gradient(180deg, #FAF9F7 0%, var(--light) 100%);
+      color: var(--ink);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* ── Header ── */
     header {
-      background: var(--dark);
-      padding: 0 40px;
-      height: 64px;
+      width: 100%;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 26px 28px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      gap: 20px;
     }
 
-    .logo {
+    .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       text-decoration: none;
+      color: inherit;
     }
 
     .logo-img {
-      height: 36px;
+      height: 40px;
       width: auto;
       display: block;
     }
 
-    .header-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255,255,255,0.45);
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-    }
-
-    /* ── Main layout ── */
-    main {
-      flex: 1;
+    .brand-copy {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 48px 20px;
+      gap: 2px;
     }
 
-    .page-title {
-      font-size: 42px;
+    .brand-kicker {
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--dark);
-      margin-bottom: 6px;
-      text-align: center;
-    }
-
-    .page-subtitle {
-      font-size: 16px;
-      font-weight: 500;
+      letter-spacing: 0.22em;
       color: var(--mid);
-      text-align: center;
-      margin-bottom: 40px;
-      letter-spacing: 0.03em;
     }
 
-    /* ── Cards ── */
-    .card {
-      background: var(--white);
-      box-shadow: var(--shadow);
-      padding: 32px;
+    .brand-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--dark);
+    }
+
+    .header-pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.75);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--mid);
+      backdrop-filter: blur(10px);
+    }
+
+    main {
       width: 100%;
-      max-width: 520px;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 18px 28px 56px;
+      flex: 1;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #58595B 0%, #3D3E40 62%, #2F3031 100%);
+      color: var(--white);
+      padding: 38px 40px;
+      box-shadow: var(--hero-shadow);
+      margin-bottom: 24px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      right: -90px;
+      top: -90px;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(237, 28, 36, 0.28) 0%, rgba(237, 28, 36, 0) 72%);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 auto;
+      width: 220px;
+      height: 6px;
+      background: linear-gradient(90deg, transparent 0%, var(--red) 100%);
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+      gap: 30px;
+      align-items: end;
+    }
+
+    .hero-kicker {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.24em;
+      color: rgba(255,255,255,0.62);
+      margin-bottom: 10px;
+    }
+
+    .hero-title {
+      font-size: 64px;
+      line-height: 0.95;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      max-width: 680px;
       margin-bottom: 16px;
     }
 
-    .card-label {
+    .hero-text {
+      font-size: 20px;
+      line-height: 1.3;
+      color: rgba(255,255,255,0.74);
+      max-width: 620px;
+    }
+
+    .hero-panel {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 18px 20px;
+      backdrop-filter: blur(6px);
+    }
+
+    .hero-panel-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 14px;
+    }
+
+    .hero-panel ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .hero-panel li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 17px;
+      color: rgba(255,255,255,0.9);
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .hero-panel li:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .hero-panel span {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.42);
+      flex-shrink: 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 18px 0 14px;
+    }
+
+    .section-title {
+      font-size: 30px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--dark);
+    }
+
+    .section-copy {
+      font-size: 16px;
+      color: var(--mid);
+      max-width: 560px;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .module-card {
+      position: relative;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 48px rgba(0,0,0,0.14);
+    }
+
+    .module-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 5px;
+      background: var(--accent, var(--red));
+    }
+
+    .module-top {
+      display: grid;
+      gap: 16px;
+    }
+
+    .module-icon {
+      width: 54px;
+      height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--accent, var(--red)) 12%, white);
+      color: var(--accent, var(--red));
+    }
+
+    .module-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .module-name {
+      font-size: 30px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--dark);
+    }
+
+    .module-description {
+      font-size: 17px;
+      line-height: 1.28;
+      color: var(--mid);
+      max-width: 24ch;
+    }
+
+    .module-meta {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.2em;
       color: var(--mid);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-top: 18px;
     }
 
-    .card-label::before {
-      content: '';
-      display: block;
-      width: 3px;
-      height: 14px;
-      background: var(--red);
-      flex-shrink: 0;
-    }
-
-    /* ── Inputs ── */
-    input[type="text"], input[type="search"] {
-      font-family: inherit;
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--dark);
-      background: var(--light);
-      border: 2px solid transparent;
-      padding: 14px 16px;
-      width: 100%;
-      outline: none;
-      transition: border-color .3s ease, background .3s ease;
-    }
-
-    input[type="text"]:focus, input[type="search"]:focus {
-      border-color: var(--red);
-      background: var(--white);
-    }
-
-    input::placeholder { color: #b1bec5; }
-
-    /* ── User dropdown ── */
-    ul {
-      list-style: none;
-      border: 2px solid var(--border);
-      margin-top: 4px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-
-    li {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--dark);
-      transition: background .2s ease, color .2s ease;
-    }
-
-    li:first-child { border-top: none; }
-
-    li:hover {
-      background: var(--red);
-      color: var(--white);
-    }
-
-    /* ── User badge ── */
-    .user-badge {
-      display: none;
+    .module-cta {
+      display: inline-flex;
       align-items: center;
       gap: 10px;
-      background: var(--dark);
-      color: var(--white);
-      padding: 10px 16px;
-      margin-top: 10px;
       font-size: 15px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .user-badge.visible { display: flex; }
-
-    .user-badge span {
-      font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: rgba(255,255,255,0.5);
-    }
-
-    .user-badge-name { font-size: 16px; }
-
-    .badge-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--red);
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    /* ── Product info ── */
-    .product-info {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--light);
-      border-left: 3px solid var(--red);
-      padding: 10px 14px;
-      margin-top: 10px;
-    }
-
-    .product-info.visible { display: flex; }
-
-    .product-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--dark);
-    }
-
-    .product-type {
-      font-size: 12px;
-      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: var(--mid);
-      margin-top: 2px;
+      color: var(--accent, var(--red));
     }
 
-    .product-stock {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--mid);
-      white-space: nowrap;
-    }
-
-    /* ── Status message ── */
-    .msg-area {
-      min-height: 44px;
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-    }
-
-    .msg {
-      display: none;
-      padding: 10px 16px;
-      font-size: 15px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      width: 100%;
-    }
-
-    .msg.visible { display: block; }
-    .msg.ok   { background: #e6f7ef; color: #0a7a4a; border-left: 3px solid #0a7a4a; }
-    .msg.err  { background: #fdecea; color: var(--red); border-left: 3px solid var(--red); }
-    .msg.info { background: var(--light); color: var(--mid); border-left: 3px solid var(--border); }
-
-    /* ── Loading overlay on barcode input ── */
-    .input-wrap { position: relative; }
-
-    .spinner {
-      display: none;
-      position: absolute;
-      right: 50px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 18px;
-      height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--red);
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
-    }
-
-    .spinner.visible { display: block; }
-
-    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-
-    /* ── Consume button ── */
-    .btn-consume {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      padding: 16px;
-      margin-top: 12px;
-      background: var(--red);
-      color: var(--white);
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      border: none;
-      cursor: pointer;
-      transition: background .3s ease, opacity .3s ease;
-    }
-
-    .btn-consume:hover:not(:disabled) { background: var(--dark); }
-
-    .btn-consume:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-consume .btn-spinner {
-      display: none;
+    .module-cta svg {
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
-      flex-shrink: 0;
     }
 
-    .btn-consume.loading .btn-spinner { display: block; }
-    .btn-consume.loading .btn-label { opacity: 0.7; }
-
-    /* ── Processing overlay en inputs ── */
-    input:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    /* ── Footer ── */
-    footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #b1bec5;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+    .quick-card {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      padding: 18px 18px 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease;
     }
 
-    /* ── Mobile ── */
-    @media (max-width: 600px) {
-      header {
-        padding: 0 20px;
-        height: 56px;
-      }
-
-      .header-title { display: none; }
-
-      main {
-        padding: 28px 16px;
-      }
-
-      .page-title { font-size: 30px; }
-      .page-subtitle { font-size: 15px; margin-bottom: 28px; }
-
-      .card { padding: 22px 18px; }
-
-      input[type="text"], input[type="search"] {
-        font-size: 16px;
-        padding: 16px 14px;
-      }
-
-      li { padding: 16px 14px; font-size: 17px; }
-
-      .btn-consume { padding: 18px; font-size: 15px; }
-
-      .msg { font-size: 14px; }
+    .quick-card:hover {
+      border-color: rgba(237,28,36,0.35);
+      background: var(--white);
+      transform: translateY(-2px);
     }
 
-    /* ── Layout con sidebar ── */
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .sidebar {
-      width: 240px;
-      background: var(--dark);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      transform: translateX(-240px);
-      transition: transform .3s ease;
-      position: fixed;
-      top: 64px;
-      left: 0;
-      bottom: 0;
-      z-index: 90;
-      overflow-y: auto;
-    }
-
-    .sidebar.open { transform: translateX(0); }
-
-    .sidebar-section { padding: 24px 0 8px; }
-
-    .sidebar-section-title {
-      font-size: 10px;
+    .quick-label {
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.2em;
-      color: rgba(255,255,255,0.3);
-      padding: 0 20px 8px;
-    }
-
-    .sidebar-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 20px;
-      font-size: 15px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: rgba(255,255,255,0.6);
-      cursor: pointer;
-      transition: background .2s ease, color .2s ease;
-      text-decoration: none;
-      border-left: 3px solid transparent;
-    }
-
-    .sidebar-item:hover { background: rgba(255,255,255,0.07); color: var(--white); }
-
-    .sidebar-item.active {
-      color: var(--white);
-      border-left-color: var(--red);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .sidebar-item.soon {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .sidebar-item .item-icon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    .soon-badge {
-      margin-left: auto;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      background: rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.4);
-      padding: 2px 6px;
-      text-transform: uppercase;
-    }
-
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 89;
-    }
-
-    .sidebar-overlay.visible { display: block; }
-
-    .layout-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      transition: margin-left .3s ease;
-      min-width: 0;
-    }
-
-    body.sidebar-open .layout-content { margin-left: 240px; }
-
-    .btn-menu {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin-right: 16px;
-    }
-
-    .btn-menu span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: rgba(255,255,255,0.8);
-      transition: transform .3s ease, opacity .3s ease;
-    }
-
-    body.sidebar-open .btn-menu span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    body.sidebar-open .btn-menu span:nth-child(2) { opacity: 0; }
-    body.sidebar-open .btn-menu span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    @media (max-width: 600px) {
-      body.sidebar-open .layout-content { margin-left: 0; }
-      .sidebar { top: 56px; }
-    }
-
-    /* ── Camera scanner button ── */
-    .btn-camera {
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
       color: var(--mid);
-      display: flex;
-      align-items: center;
-      transition: color .2s ease;
+      margin-bottom: 10px;
     }
 
-    .btn-camera:hover { color: var(--red); }
-
-    .btn-camera svg {
-      width: 22px;
-      height: 22px;
-    }
-
-    /* ── Scanner modal ── */
-    .scanner-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 200;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .scanner-modal.visible { display: flex; }
-
-    .scanner-box {
-      background: var(--dark);
-      width: 100%;
-      max-width: 480px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .scanner-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .scanner-title {
-      font-size: 13px;
+    .quick-title {
+      font-size: 22px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: rgba(255,255,255,0.8);
+      letter-spacing: 0.03em;
+      color: var(--dark);
+      margin-bottom: 8px;
     }
 
-    .scanner-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .quick-copy {
+      font-size: 15px;
+      line-height: 1.25;
+      color: var(--mid);
     }
 
-    .btn-torch, .btn-switch-cam {
-      display: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: rgba(255,255,255,0.5);
-      padding: 4px 8px;
-      transition: color .2s ease;
-    }
-
-    .btn-torch.visible, .btn-switch-cam.visible { display: flex; align-items: center; }
-    .btn-torch.on { color: #f5c542; }
-    .btn-torch:hover, .btn-switch-cam:hover { color: var(--white); }
-
-    .btn-torch svg, .btn-switch-cam svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .cam-label {
-      font-size: 10px;
+    footer {
+      text-align: center;
+      padding: 26px 20px 34px;
+      font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.35);
-      text-align: center;
-      padding: 4px 18px 8px;
+      color: var(--mid);
+      letter-spacing: 0.16em;
       text-transform: uppercase;
     }
 
-    .btn-scanner-close {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: rgba(255,255,255,0.5);
-      font-size: 20px;
-      line-height: 1;
-      padding: 2px 6px;
-      transition: color .2s ease;
+    @media (max-width: 1100px) {
+      .hero-grid,
+      .module-grid,
+      .quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .hero-title {
+        font-size: 54px;
+      }
     }
 
-    .btn-scanner-close:hover { color: var(--white); }
+    @media (max-width: 720px) {
+      header,
+      main {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
 
-    .scanner-video-wrap {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4/3;
-      background: #000;
-      overflow: hidden;
+      header {
+        padding-top: 18px;
+      }
+
+      .header-pill {
+        display: none;
+      }
+
+      .hero {
+        padding: 28px 22px;
+      }
+
+      .hero-grid,
+      .module-grid,
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-title {
+        font-size: 42px;
+      }
+
+      .hero-text {
+        font-size: 18px;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .brand-title {
+        font-size: 20px;
+      }
     }
-
-    #scannerVideo {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .scanner-crosshair {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-
-    .scanner-crosshair::before {
-      content: '';
-      width: 65%;
-      height: 55%;
-      border: 2px solid var(--red);
-      opacity: 0.85;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.3);
-      transition: border-color .2s ease;
-    }
-
-    .scanner-crosshair.focusing::before {
-      border-color: #f5c542;
-    }
-
-    .focus-ring {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      border: 2px solid #f5c542;
-      border-radius: 50%;
-      pointer-events: none;
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(1.4);
-      transition: opacity .15s ease, transform .3s ease;
-    }
-
-    .focus-ring.active {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    .scanner-status {
-      padding: 12px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.45);
-      text-align: center;
-    }
-
-    .scanner-status.ok { color: #4caf8a; }
-    .scanner-status.err { color: var(--red); }
   </style>
 </head>
 <body>
-
   <header>
-    <button class="btn-menu" id="btnMenu" aria-label="Menu"><span></span><span></span><span></span></button>
-    <a class="logo" href="#">
+    <a class="brand" href="index.html">
       <img class="logo-img" src="/logo.png" alt="Akron" />
+      <div class="brand-copy">
+        <div class="brand-kicker">Sistema interno</div>
+        <div class="brand-title">IT Akron</div>
+      </div>
     </a>
-    <span class="header-title">Gestión de consumibles</span>
+    <div class="header-pill">Mesa operativa</div>
   </header>
 
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Modulos</div>
-      <a class="sidebar-item active" href="#">
-        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8L4 7h16l-4-4z"/></svg>
-        Consumibles
-      </a>
-      <a class="sidebar-item" href="discos.html">
-        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        Discos
-      </a>
-      <a class="sidebar-item" href="notebooks.html">
-        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        Notebooks
-      </a>
-      <a class="sidebar-item" href="celulares.html">
-        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-        Celulares
-      </a>
-    </div>
-  </nav>
-
-  <div class="layout">
-    <div class="layout-content">
   <main>
-    <h1 class="page-title">Salida de consumibles</h1>
-    <p class="page-subtitle">Seleccioná un usuario y escaneá el código del producto</p>
-
-    <!-- Card: Usuario -->
-    <div class="card">
-      <div class="card-label">Usuario</div>
-      <div class="input-wrap">
-        <input id="userSearch" type="search" placeholder="Buscar por nombre de usuario..." autocomplete="off" />
-      </div>
-      <ul id="userList" hidden></ul>
-      <div id="userBadge" class="user-badge">
-        <div class="badge-dot"></div>
+    <section class="hero">
+      <div class="hero-grid">
         <div>
-          <span>Usuario seleccionado</span>
-          <div class="user-badge-name" id="userBadgeName"></div>
+          <div class="hero-kicker">Punto de entrada</div>
+          <h1 class="hero-title">Herramientas para operar sin rodeos</h1>
+          <p class="hero-text">Entrá directo al módulo correcto según la tarea que tengas enfrente: asignar insumos, consultar discos o mover stock local de equipos.</p>
+        </div>
+        <aside class="hero-panel">
+          <div class="hero-panel-label">Qué podés hacer acá</div>
+          <ul>
+            <li>Asignar consumibles a usuarios <span>GLPI</span></li>
+            <li>Consultar ubicación de discos <span>Inventario</span></li>
+            <li>Mover stock de notebooks <span>SQLite local</span></li>
+            <li>Gestionar stock de celulares <span>SQLite local</span></li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Módulos</h2>
+          <p class="section-copy">Cada acceso abre una herramienta específica. La home queda para entrar rápido; la navegación lateral sigue quedando dentro de cada módulo.</p>
         </div>
       </div>
-    </div>
 
-    <!-- Card: Barcode -->
-    <div class="card">
-      <div class="card-label">Código de producto</div>
-      <div class="input-wrap">
-        <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" />
-        <div id="spinner" class="spinner"></div>
-        <button class="btn-camera" id="btnCamera" type="button" title="Escanear con cámara" aria-label="Escanear con cámara">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </button>
+      <div class="module-grid">
+        <a class="module-card" href="consumibles.html" style="--accent:#ED1C24;">
+          <div class="module-top">
+            <div class="module-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8L4 7h16l-4-4z"/></svg>
+            </div>
+            <div>
+              <div class="module-name">Consumibles</div>
+              <p class="module-description">Asigná insumos a usuarios y verificá el stock disponible antes de registrar la salida.</p>
+              <div class="module-meta">Operación diaria</div>
+            </div>
+          </div>
+          <div class="module-cta">Abrir módulo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg></div>
+        </a>
+
+        <a class="module-card" href="discos.html" style="--accent:#58595B;">
+          <div class="module-top">
+            <div class="module-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <div>
+              <div class="module-name">Discos</div>
+              <p class="module-description">Consultá en qué equipo está instalado un disco usando el número de serie.</p>
+              <div class="module-meta">Consulta rápida</div>
+            </div>
+          </div>
+          <div class="module-cta">Abrir módulo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg></div>
+        </a>
+
+        <a class="module-card" href="notebooks.html" style="--accent:#8B5E3C;">
+          <div class="module-top">
+            <div class="module-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div>
+              <div class="module-name">Notebooks</div>
+              <p class="module-description">Registrá ingresos y salidas por empresa y mantené controlado el stock local.</p>
+              <div class="module-meta">Stock local</div>
+            </div>
+          </div>
+          <div class="module-cta">Abrir módulo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg></div>
+        </a>
+
+        <a class="module-card" href="celulares.html" style="--accent:#3B6E8F;">
+          <div class="module-top">
+            <div class="module-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            </div>
+            <div>
+              <div class="module-name">Celulares</div>
+              <p class="module-description">Gestioná el inventario local de equipos móviles sin mezclarlo con notebooks.</p>
+              <div class="module-meta">Stock local</div>
+            </div>
+          </div>
+          <div class="module-cta">Abrir módulo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M13 5l7 7-7 7"/></svg></div>
+        </a>
       </div>
-      <div id="productInfo" class="product-info">
+    </section>
+
+    <section>
+      <div class="section-head">
         <div>
-          <div class="product-name" id="productName"></div>
-          <div class="product-type" id="productType"></div>
+          <h2 class="section-title">Accesos rápidos</h2>
+          <p class="section-copy">Atajos pensados por intención de uso, no por estructura técnica.</p>
         </div>
-        <span class="product-stock" id="productStock"></span>
       </div>
-      <div class="msg-area">
-        <div id="msg" class="msg"></div>
+
+      <div class="quick-grid">
+        <a class="quick-card" href="consumibles.html">
+          <div class="quick-label">Salida</div>
+          <div class="quick-title">Registrar consumible</div>
+          <div class="quick-copy">Entrá directo al flujo para asignar un insumo a un usuario.</div>
+        </a>
+        <a class="quick-card" href="discos.html">
+          <div class="quick-label">Consulta</div>
+          <div class="quick-title">Buscar disco</div>
+          <div class="quick-copy">Ideal para soporte cuando necesitás ubicar rápido un serial.</div>
+        </a>
+        <a class="quick-card" href="notebooks.html">
+          <div class="quick-label">Stock</div>
+          <div class="quick-title">Mover notebooks</div>
+          <div class="quick-copy">Registrá ingresos o salidas por empresa sin pasar por GLPI.</div>
+        </a>
+        <a class="quick-card" href="celulares.html">
+          <div class="quick-label">Stock</div>
+          <div class="quick-title">Mover celulares</div>
+          <div class="quick-copy">Administrá equipos móviles con la misma operatoria del stock local.</div>
+        </a>
       </div>
-      <button id="btnConsume" class="btn-consume" onclick="consume()">
-        <div class="btn-spinner"></div>
-        <span class="btn-label">Registrar salida</span>
-      </button>
-    </div>
+    </section>
   </main>
 
-  <footer>Akron &copy; 2025 — Sistema interno</footer>
-
-  <!-- Scanner modal -->
-  <div class="scanner-modal" id="scannerModal">
-    <div class="scanner-box">
-      <div class="scanner-header">
-        <span class="scanner-title">Escanear código</span>
-        <div class="scanner-header-actions">
-          <button class="btn-switch-cam" id="btnSwitchCam" type="button" aria-label="Cambiar cámara">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
-          </button>
-          <button class="btn-torch" id="btnTorch" type="button" aria-label="Linterna">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8l-2 14h14L17 8"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
-          </button>
-          <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
-        </div>
-      </div>
-      <div class="scanner-video-wrap">
-        <video id="scannerVideo" autoplay playsinline muted></video>
-        <div class="scanner-crosshair" id="scannerCrosshair"></div>
-        <div class="focus-ring" id="focusRing"></div>
-      </div>
-      <div class="cam-label" id="camLabel"></div>
-      <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
-    </div>
-  </div>
-
-  <script src="/api.js"></script>
-  <script src="/scanner.js"></script>
-  <script>
-    const $ = (id) => document.getElementById(id);
-    let selectedUser = null;
-    let debounce = null;
-    let barcodeDebounce = null;
-    let lastCodeScanned = "";
-
-    function setMsg(text, cls = "") {
-      const el = $("msg");
-      if (!text) {
-        el.className = "msg";
-        el.textContent = "";
-        return;
-      }
-      el.className = `msg visible ${cls}`;
-      el.textContent = text;
-    }
-
-    function setUser(user) {
-      selectedUser = user;
-      $("userBadgeName").textContent = user.name;
-      $("userBadge").classList.add("visible");
-      $("userList").hidden = true;
-      $("userSearch").value = "";
-      $("barcode").focus();
-    }
-
-    function setProduct(name, type, stock) {
-      const info = $("productInfo");
-      if (!name) {
-        info.classList.remove("visible");
-        $("productName").textContent = "";
-        $("productType").textContent = "";
-        $("productStock").textContent = "";
-        return;
-      }
-      $("productName").textContent = name;
-      $("productType").textContent = type || "";
-      $("productStock").textContent = Number.isFinite(stock) ? `Stock: ${stock}` : "";
-      info.classList.add("visible");
-    }
-
-    function getNormalizedBarcode() {
-      return window.normalizeScannedCode($("barcode").value);
-    }
-
-    // Detección de producto al escanear
-    $("barcode").addEventListener("input", () => {
-      const code = getNormalizedBarcode();
-      $("barcode").value = code;
-      if (code.length < 3) { setProduct(null); return; }
-      lastCodeScanned = code;
-      clearTimeout(barcodeDebounce);
-      $("spinner").classList.add("visible");
-      barcodeDebounce = setTimeout(async () => {
-        try {
-          const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
-          if (r.ok) {
-            const model = await r.json();
-            setProduct(model.name, model.type, model.stock);
-            setMsg("");
-          } else if (r.status === 404) {
-            setProduct(null);
-          } else {
-            const payload = await readJsonResponse(r);
-            const apiError = getApiError(payload, "Error al consultar el producto");
-            setProduct(null);
-            setMsg(apiError.message, "err");
-          }
-        } catch (e) {
-          setProduct(null);
-          setMsg("Error de conexión", "err");
-        } finally {
-          $("spinner").classList.remove("visible");
-        }
-      }, 150);
-    });
-
-    function setProcessing(on) {
-      const btn = $("btnConsume");
-      const barcodeEl = $("barcode");
-      const userEl = $("userSearch");
-      btn.disabled = on;
-      barcodeEl.disabled = on;
-      userEl.disabled = on;
-      btn.classList.toggle("loading", on);
-    }
-
-    // Consumo
-    async function consume() {
-      if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
-      const code = getNormalizedBarcode() || lastCodeScanned;
-      if (!code) { setMsg("Escaneá un producto.", "err"); return; }
-
-      $("barcode").value = "";
-      lastCodeScanned = "";
-      setMsg("Procesando...", "info");
-      setProduct(null);
-      setProcessing(true);
-
-      try {
-        const r = await fetch("/api/consume", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
-        });
-        const j = await readJsonResponse(r);
-        if (!r.ok) {
-          const apiError = getApiError(j, "No se pudo registrar la salida");
-          setMsg(apiError.message, "err");
-        } else {
-          setMsg(`Asignado: ${j.model?.name}  —  Quedan: ${j.remaining}`, "ok");
-          setTimeout(() => { if ($("msg").classList.contains("ok")) setMsg(""); }, 4000);
-        }
-      } catch (e) {
-        setMsg("Error de conexión", "err");
-      } finally {
-        setProcessing(false);
-        $("barcode").focus();
-      }
-    }
-
-    $("barcode").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); consume(); }
-    });
-
-    // Buscador de usuarios
-    $("userSearch").addEventListener("input", () => {
-      const q = $("userSearch").value.trim();
-      clearTimeout(debounce);
-      if (q.length < 2) { $("userList").hidden = true; return; }
-      debounce = setTimeout(async () => {
-        try {
-          const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
-          const data = await readJsonResponse(r);
-          if (r.ok) {
-            const ul = $("userList");
-            ul.innerHTML = "";
-            (data.results || []).forEach(u => {
-              const li = document.createElement("li");
-              li.textContent = u.name;
-              li.addEventListener("click", () => setUser(u));
-              ul.appendChild(li);
-            });
-            ul.hidden = (data.results || []).length === 0;
-          } else {
-            const apiError = getApiError(data, "No se pudo buscar usuarios");
-            $("userList").hidden = true;
-            setMsg(apiError.message, "err");
-          }
-        } catch (e) {
-          $("userList").hidden = true;
-          setMsg("Error de conexión", "err");
-        }
-      }, 300);
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!["INPUT", "LI"].includes(e.target.tagName) && !e.target.closest("#scannerModal, #btnCamera")) {
-        $("barcode").focus();
-      }
-    });
-
-    // En desktop suprimir teclado virtual (hay escáner físico); en mobile mostrarlo
-    if (window.matchMedia("(pointer: fine)").matches) {
-      $("barcode").setAttribute("inputmode", "none");
-    }
-
-    window.addEventListener("load", () => $("userSearch").focus());
-
-    initBarcodeScanner({ getById: $, inputId: "barcode" });
-
-    // Sidebar
-    const btnMenu = document.getElementById('btnMenu');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    function toggleSidebar() {
-      document.body.classList.toggle('sidebar-open');
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('visible');
-    }
-
-    btnMenu.addEventListener('click', toggleSidebar);
-    overlay.addEventListener('click', toggleSidebar);
-  </script>
+  <footer>Akron © 2025 — Sistema interno</footer>
 </body>
 </html>

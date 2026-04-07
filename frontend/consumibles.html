@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IT Akron</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:      #ED1C24;
+      --dark:     #58595B;
+      --mid:      #7f8284;
+      --light:    #f3f3f3;
+      --border:   #e0e0e0;
+      --white:    #ffffff;
+      --shadow:   0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: 'Barlow Condensed', system-ui, sans-serif;
+      font-weight: 500;
+      background: var(--light);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--dark);
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 36px;
+      width: auto;
+      display: block;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    /* ── Main layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 20px;
+    }
+
+    .page-title {
+      font-size: 42px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--dark);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .page-subtitle {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--mid);
+      text-align: center;
+      margin-bottom: 40px;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 16px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--mid);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 14px;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="search"] {
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--dark);
+      background: var(--light);
+      border: 2px solid transparent;
+      padding: 14px 16px;
+      width: 100%;
+      outline: none;
+      transition: border-color .3s ease, background .3s ease;
+    }
+
+    input[type="text"]:focus, input[type="search"]:focus {
+      border-color: var(--red);
+      background: var(--white);
+    }
+
+    input::placeholder { color: #b1bec5; }
+
+    /* ── User dropdown ── */
+    ul {
+      list-style: none;
+      border: 2px solid var(--border);
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    li {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--dark);
+      transition: background .2s ease, color .2s ease;
+    }
+
+    li:first-child { border-top: none; }
+
+    li:hover {
+      background: var(--red);
+      color: var(--white);
+    }
+
+    /* ── User badge ── */
+    .user-badge {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--dark);
+      color: var(--white);
+      padding: 10px 16px;
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .user-badge.visible { display: flex; }
+
+    .user-badge span {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .user-badge-name { font-size: 16px; }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Product info ── */
+    .product-info {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--light);
+      border-left: 3px solid var(--red);
+      padding: 10px 14px;
+      margin-top: 10px;
+    }
+
+    .product-info.visible { display: flex; }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .product-type {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--mid);
+      margin-top: 2px;
+    }
+
+    .product-stock {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--mid);
+      white-space: nowrap;
+    }
+
+    /* ── Status message ── */
+    .msg-area {
+      min-height: 44px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .msg {
+      display: none;
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      width: 100%;
+    }
+
+    .msg.visible { display: block; }
+    .msg.ok   { background: #e6f7ef; color: #0a7a4a; border-left: 3px solid #0a7a4a; }
+    .msg.err  { background: #fdecea; color: var(--red); border-left: 3px solid var(--red); }
+    .msg.info { background: var(--light); color: var(--mid); border-left: 3px solid var(--border); }
+
+    /* ── Loading overlay on barcode input ── */
+    .input-wrap { position: relative; }
+
+    .spinner {
+      display: none;
+      position: absolute;
+      right: 50px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+
+    .spinner.visible { display: block; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* ── Consume button ── */
+    .btn-consume {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      margin-top: 12px;
+      background: var(--red);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      border: none;
+      cursor: pointer;
+      transition: background .3s ease, opacity .3s ease;
+    }
+
+    .btn-consume:hover:not(:disabled) { background: var(--dark); }
+
+    .btn-consume:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-consume .btn-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .btn-consume.loading .btn-spinner { display: block; }
+    .btn-consume.loading .btn-label { opacity: 0.7; }
+
+    /* ── Processing overlay en inputs ── */
+    input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #b1bec5;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      header {
+        padding: 0 20px;
+        height: 56px;
+      }
+
+      .header-title { display: none; }
+
+      main {
+        padding: 28px 16px;
+      }
+
+      .page-title { font-size: 30px; }
+      .page-subtitle { font-size: 15px; margin-bottom: 28px; }
+
+      .card { padding: 22px 18px; }
+
+      input[type="text"], input[type="search"] {
+        font-size: 16px;
+        padding: 16px 14px;
+      }
+
+      li { padding: 16px 14px; font-size: 17px; }
+
+      .btn-consume { padding: 18px; font-size: 15px; }
+
+      .msg { font-size: 14px; }
+    }
+
+    /* ── Layout con sidebar ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--dark);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transform: translateX(-240px);
+      transition: transform .3s ease;
+      position: fixed;
+      top: 64px;
+      left: 0;
+      bottom: 0;
+      z-index: 90;
+      overflow-y: auto;
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-section { padding: 24px 0 8px; }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.3);
+      padding: 0 20px 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: background .2s ease, color .2s ease;
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-item:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+
+    .sidebar-item.active {
+      color: var(--white);
+      border-left-color: var(--red);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .sidebar-item.soon {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .sidebar-item .item-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .soon-badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4);
+      padding: 2px 6px;
+      text-transform: uppercase;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 89;
+    }
+
+    .sidebar-overlay.visible { display: block; }
+
+    .layout-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      transition: margin-left .3s ease;
+      min-width: 0;
+    }
+
+    body.sidebar-open .layout-content { margin-left: 240px; }
+
+    .btn-menu {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-right: 16px;
+    }
+
+    .btn-menu span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: rgba(255,255,255,0.8);
+      transition: transform .3s ease, opacity .3s ease;
+    }
+
+    body.sidebar-open .btn-menu span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    body.sidebar-open .btn-menu span:nth-child(2) { opacity: 0; }
+    body.sidebar-open .btn-menu span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    @media (max-width: 600px) {
+      body.sidebar-open .layout-content { margin-left: 0; }
+      .sidebar { top: 56px; }
+    }
+
+    /* ── Camera scanner button ── */
+    .btn-camera {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--mid);
+      display: flex;
+      align-items: center;
+      transition: color .2s ease;
+    }
+
+    .btn-camera:hover { color: var(--red); }
+
+    .btn-camera svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* ── Scanner modal ── */
+    .scanner-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .scanner-modal.visible { display: flex; }
+
+    .scanner-box {
+      background: var(--dark);
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scanner-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .scanner-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .scanner-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-torch, .btn-switch-cam {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      padding: 4px 8px;
+      transition: color .2s ease;
+    }
+
+    .btn-torch.visible, .btn-switch-cam.visible { display: flex; align-items: center; }
+    .btn-torch.on { color: #f5c542; }
+    .btn-torch:hover, .btn-switch-cam:hover { color: var(--white); }
+
+    .btn-torch svg, .btn-switch-cam svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .cam-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.35);
+      text-align: center;
+      padding: 4px 18px 8px;
+      text-transform: uppercase;
+    }
+
+    .btn-scanner-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.5);
+      font-size: 20px;
+      line-height: 1;
+      padding: 2px 6px;
+      transition: color .2s ease;
+    }
+
+    .btn-scanner-close:hover { color: var(--white); }
+
+    .scanner-video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #scannerVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .scanner-crosshair {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .scanner-crosshair::before {
+      content: '';
+      width: 65%;
+      height: 55%;
+      border: 2px solid var(--red);
+      opacity: 0.85;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.3);
+      transition: border-color .2s ease;
+    }
+
+    .scanner-crosshair.focusing::before {
+      border-color: #f5c542;
+    }
+
+    .focus-ring {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 2px solid #f5c542;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1.4);
+      transition: opacity .15s ease, transform .3s ease;
+    }
+
+    .focus-ring.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .scanner-status {
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+    }
+
+    .scanner-status.ok { color: #4caf8a; }
+    .scanner-status.err { color: var(--red); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <button class="btn-menu" id="btnMenu" aria-label="Menu"><span></span><span></span><span></span></button>
+    <a class="logo" href="index.html">
+      <img class="logo-img" src="/logo.png" alt="Akron" />
+    </a>
+    <span class="header-title">Gestión de consumibles</span>
+  </header>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <a class="sidebar-item" href="index.html">
+        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg>
+        Inicio
+      </a>
+      <div class="sidebar-section-title">Modulos</div>
+      <a class="sidebar-item active" href="consumibles.html">
+        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8L4 7h16l-4-4z"/></svg>
+        Consumibles
+      </a>
+      <a class="sidebar-item" href="discos.html">
+        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Discos
+      </a>
+      <a class="sidebar-item" href="notebooks.html">
+        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        Notebooks
+      </a>
+      <a class="sidebar-item" href="celulares.html">
+        <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Celulares
+      </a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <div class="layout-content">
+  <main>
+    <h1 class="page-title">Salida de consumibles</h1>
+    <p class="page-subtitle">Seleccioná un usuario y escaneá el código del producto</p>
+
+    <!-- Card: Usuario -->
+    <div class="card">
+      <div class="card-label">Usuario</div>
+      <div class="input-wrap">
+        <input id="userSearch" type="search" placeholder="Buscar por nombre de usuario..." autocomplete="off" />
+      </div>
+      <ul id="userList" hidden></ul>
+      <div id="userBadge" class="user-badge">
+        <div class="badge-dot"></div>
+        <div>
+          <span>Usuario seleccionado</span>
+          <div class="user-badge-name" id="userBadgeName"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card: Barcode -->
+    <div class="card">
+      <div class="card-label">Código de producto</div>
+      <div class="input-wrap">
+        <input id="barcode" type="text" placeholder="Escaneá el código de barras..." autocomplete="off" />
+        <div id="spinner" class="spinner"></div>
+        <button class="btn-camera" id="btnCamera" type="button" title="Escanear con cámara" aria-label="Escanear con cámara">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+      </div>
+      <div id="productInfo" class="product-info">
+        <div>
+          <div class="product-name" id="productName"></div>
+          <div class="product-type" id="productType"></div>
+        </div>
+        <span class="product-stock" id="productStock"></span>
+      </div>
+      <div class="msg-area">
+        <div id="msg" class="msg"></div>
+      </div>
+      <button id="btnConsume" class="btn-consume" onclick="consume()">
+        <div class="btn-spinner"></div>
+        <span class="btn-label">Registrar salida</span>
+      </button>
+    </div>
+  </main>
+
+  <footer>Akron &copy; 2025 — Sistema interno</footer>
+
+  <!-- Scanner modal -->
+  <div class="scanner-modal" id="scannerModal">
+    <div class="scanner-box">
+      <div class="scanner-header">
+        <span class="scanner-title">Escanear código</span>
+        <div class="scanner-header-actions">
+          <button class="btn-switch-cam" id="btnSwitchCam" type="button" aria-label="Cambiar cámara">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+          </button>
+          <button class="btn-torch" id="btnTorch" type="button" aria-label="Linterna">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8l-2 14h14L17 8"/><line x1="12" y1="12" x2="12" y2="18"/></svg>
+          </button>
+          <button class="btn-scanner-close" id="btnScannerClose" type="button" aria-label="Cerrar">&#x2715;</button>
+        </div>
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="scannerVideo" autoplay playsinline muted></video>
+        <div class="scanner-crosshair" id="scannerCrosshair"></div>
+        <div class="focus-ring" id="focusRing"></div>
+      </div>
+      <div class="cam-label" id="camLabel"></div>
+      <div class="scanner-status" id="scannerStatus">Apuntá la cámara al código...</div>
+    </div>
+  </div>
+
+  <script src="/api.js"></script>
+  <script src="/scanner.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let selectedUser = null;
+    let debounce = null;
+    let barcodeDebounce = null;
+    let lastCodeScanned = "";
+
+    function setMsg(text, cls = "") {
+      const el = $("msg");
+      if (!text) {
+        el.className = "msg";
+        el.textContent = "";
+        return;
+      }
+      el.className = `msg visible ${cls}`;
+      el.textContent = text;
+    }
+
+    function setUser(user) {
+      selectedUser = user;
+      $("userBadgeName").textContent = user.name;
+      $("userBadge").classList.add("visible");
+      $("userList").hidden = true;
+      $("userSearch").value = "";
+      $("barcode").focus();
+    }
+
+    function setProduct(name, type, stock) {
+      const info = $("productInfo");
+      if (!name) {
+        info.classList.remove("visible");
+        $("productName").textContent = "";
+        $("productType").textContent = "";
+        $("productStock").textContent = "";
+        return;
+      }
+      $("productName").textContent = name;
+      $("productType").textContent = type || "";
+      $("productStock").textContent = Number.isFinite(stock) ? `Stock: ${stock}` : "";
+      info.classList.add("visible");
+    }
+
+    function getNormalizedBarcode() {
+      return window.normalizeScannedCode($("barcode").value);
+    }
+
+    // Detección de producto al escanear
+    $("barcode").addEventListener("input", () => {
+      const code = getNormalizedBarcode();
+      $("barcode").value = code;
+      if (code.length < 3) { setProduct(null); return; }
+      lastCodeScanned = code;
+      clearTimeout(barcodeDebounce);
+      $("spinner").classList.add("visible");
+      barcodeDebounce = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/model/${encodeURIComponent(code)}`);
+          if (r.ok) {
+            const model = await r.json();
+            setProduct(model.name, model.type, model.stock);
+            setMsg("");
+          } else if (r.status === 404) {
+            setProduct(null);
+          } else {
+            const payload = await readJsonResponse(r);
+            const apiError = getApiError(payload, "Error al consultar el producto");
+            setProduct(null);
+            setMsg(apiError.message, "err");
+          }
+        } catch (e) {
+          setProduct(null);
+          setMsg("Error de conexión", "err");
+        } finally {
+          $("spinner").classList.remove("visible");
+        }
+      }, 150);
+    });
+
+    function setProcessing(on) {
+      const btn = $("btnConsume");
+      const barcodeEl = $("barcode");
+      const userEl = $("userSearch");
+      btn.disabled = on;
+      barcodeEl.disabled = on;
+      userEl.disabled = on;
+      btn.classList.toggle("loading", on);
+    }
+
+    // Consumo
+    async function consume() {
+      if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
+      const code = getNormalizedBarcode() || lastCodeScanned;
+      if (!code) { setMsg("Escaneá un producto.", "err"); return; }
+
+      $("barcode").value = "";
+      lastCodeScanned = "";
+      setMsg("Procesando...", "info");
+      setProduct(null);
+      setProcessing(true);
+
+      try {
+        const r = await fetch("/api/consume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: selectedUser.id, barcode: code })
+        });
+        const j = await readJsonResponse(r);
+        if (!r.ok) {
+          const apiError = getApiError(j, "No se pudo registrar la salida");
+          setMsg(apiError.message, "err");
+        } else {
+          setMsg(`Asignado: ${j.model?.name}  —  Quedan: ${j.remaining}`, "ok");
+          setTimeout(() => { if ($("msg").classList.contains("ok")) setMsg(""); }, 4000);
+        }
+      } catch (e) {
+        setMsg("Error de conexión", "err");
+      } finally {
+        setProcessing(false);
+        $("barcode").focus();
+      }
+    }
+
+    $("barcode").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); consume(); }
+    });
+
+    // Buscador de usuarios
+    $("userSearch").addEventListener("input", () => {
+      const q = $("userSearch").value.trim();
+      clearTimeout(debounce);
+      if (q.length < 2) { $("userList").hidden = true; return; }
+      debounce = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/users?q=${encodeURIComponent(q)}`);
+          const data = await readJsonResponse(r);
+          if (r.ok) {
+            const ul = $("userList");
+            ul.innerHTML = "";
+            (data.results || []).forEach(u => {
+              const li = document.createElement("li");
+              li.textContent = u.name;
+              li.addEventListener("click", () => setUser(u));
+              ul.appendChild(li);
+            });
+            ul.hidden = (data.results || []).length === 0;
+          } else {
+            const apiError = getApiError(data, "No se pudo buscar usuarios");
+            $("userList").hidden = true;
+            setMsg(apiError.message, "err");
+          }
+        } catch (e) {
+          $("userList").hidden = true;
+          setMsg("Error de conexión", "err");
+        }
+      }, 300);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!["INPUT", "LI"].includes(e.target.tagName) && !e.target.closest("#scannerModal, #btnCamera")) {
+        $("barcode").focus();
+      }
+    });
+
+    // En desktop suprimir teclado virtual (hay escáner físico); en mobile mostrarlo
+    if (window.matchMedia("(pointer: fine)").matches) {
+      $("barcode").setAttribute("inputmode", "none");
+    }
+
+    window.addEventListener("load", () => $("userSearch").focus());
+
+    initBarcodeScanner({ getById: $, inputId: "barcode" });
+
+    // Sidebar
+    const btnMenu = document.getElementById('btnMenu');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function toggleSidebar() {
+      document.body.classList.toggle('sidebar-open');
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible');
+    }
+
+    btnMenu.addEventListener('click', toggleSidebar);
+    overlay.addEventListener('click', toggleSidebar);
+  </script>
+</body>
+</html>
