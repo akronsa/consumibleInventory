@@ -55,13 +55,18 @@ def _get_client_ip(request: Request) -> str:
     return (
         request.headers.get("x-real-ip")
         or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        or request.client.host
+        or (request.client.host if request.client else "unknown")
     )
+
+def rate_limit_exceeded_handler(request: Request, exc: Exception):
+    if isinstance(exc, RateLimitExceeded):
+        return _rate_limit_exceeded_handler(request, exc)
+    raise exc
 
 limiter = Limiter(key_func=_get_client_ip)
 app = FastAPI(title="GLPI Consumibles Proxy (Legacy)")
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # ---------- Session cache ----------
 _session_lock = threading.Lock()
@@ -143,7 +148,12 @@ def glpi_request(
 
 # ---------- Helpers ----------
 def normalize_barcode(s: Any) -> str:
-    return str(s or "").strip()
+    return "".join(str(s or "").split())
+
+def validate_barcode_length(value: str, field_name: str = "barcode") -> str:
+    if len(value) > 128:
+        raise HTTPException(status_code=400, detail={"error": f"{field_name} demasiado largo"})
+    return value
 
 def get_dropdown_text(value: Any) -> Optional[str]:
     if isinstance(value, str):
@@ -207,10 +217,26 @@ _db_lock = threading.Lock()
 def _db_connect() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
+def _cleanup_zero_stock(conn: sqlite3.Connection, barcode: Optional[str] = None, company: Optional[str] = None) -> None:
+    query = "DELETE FROM nb_stock WHERE quantity <= 0"
+    params: List[Any] = []
+    if barcode is not None:
+        query += " AND barcode = ?"
+        params.append(barcode)
+    if company is not None:
+        query += " AND company = ?"
+        params.append(company)
+    conn.execute(query, tuple(params))
+
 def _db_init():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     with _db_lock:
         conn = _db_connect()
         conn.executescript("""
@@ -273,7 +299,7 @@ class NbProductRequest(BaseModel):
 @app.get("/api/notebooks/lookup/{barcode}", dependencies=[Depends(require_api_key)])
 @limiter.limit("60/minute")
 def nb_lookup(request: Request, barcode: str):
-    barcode = normalize_barcode(barcode)
+    barcode = validate_barcode_length(normalize_barcode(barcode))
     if not barcode:
         raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
 
@@ -287,7 +313,7 @@ def nb_lookup(request: Request, barcode: str):
 @app.post("/api/notebooks/products", dependencies=[Depends(require_api_key)])
 @limiter.limit("30/minute")
 def nb_save_product(request: Request, req: NbProductRequest):
-    barcode = normalize_barcode(req.barcode)
+    barcode = validate_barcode_length(normalize_barcode(req.barcode))
     name = req.name.strip()
     if not barcode:
         raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
@@ -327,7 +353,7 @@ def nb_stock_all(request: Request):
 @app.post("/api/notebooks/entry", dependencies=[Depends(require_api_key)])
 @limiter.limit("30/minute")
 def nb_entry(request: Request, req: NbMoveRequest):
-    barcode = normalize_barcode(req.barcode)
+    barcode = validate_barcode_length(normalize_barcode(req.barcode))
     company = req.company.strip()
 
     if not barcode:
@@ -362,7 +388,7 @@ def nb_entry(request: Request, req: NbMoveRequest):
 @app.post("/api/notebooks/exit", dependencies=[Depends(require_api_key)])
 @limiter.limit("30/minute")
 def nb_exit(request: Request, req: NbMoveRequest):
-    barcode = normalize_barcode(req.barcode)
+    barcode = validate_barcode_length(normalize_barcode(req.barcode))
     company = req.company.strip()
 
     if not barcode:
@@ -388,9 +414,11 @@ def nb_exit(request: Request, req: NbMoveRequest):
             "INSERT INTO nb_movements (barcode, company, direction) VALUES (?, ?, '-')",
             (barcode, company),
         )
-        quantity = conn.execute(
+        _cleanup_zero_stock(conn, barcode, company)
+        quantity_row = conn.execute(
             "SELECT quantity FROM nb_stock WHERE barcode = ? AND company = ?", (barcode, company)
-        ).fetchone()["quantity"]
+        ).fetchone()
+        quantity = quantity_row["quantity"] if quantity_row else 0
         conn.commit()
         conn.close()
 
@@ -430,7 +458,7 @@ def users(request: Request, q: str = Query(..., min_length=2)):
 @app.post("/api/consume", dependencies=[Depends(require_api_key)])
 @limiter.limit("30/minute")
 def consume(request: Request, req: ConsumeRequest):
-    barcode = normalize_barcode(req.barcode)
+    barcode = validate_barcode_length(normalize_barcode(req.barcode))
     if not barcode:
         raise HTTPException(status_code=400, detail={"error": "barcode requerido"})
 
@@ -483,7 +511,7 @@ def consume(request: Request, req: ConsumeRequest):
 @app.get("/api/model/{barcode}", dependencies=[Depends(require_api_key)])
 @limiter.limit("60/minute")
 def get_model_info(request: Request, barcode: str):
-    barcode = normalize_barcode(barcode)
+    barcode = validate_barcode_length(normalize_barcode(barcode))
     model = get_model_by_ref(barcode)
     if not model:
         raise HTTPException(status_code=404, detail={"error": "Modelo no encontrado"})
@@ -492,7 +520,7 @@ def get_model_info(request: Request, barcode: str):
 @app.get("/api/disk/{serial}", dependencies=[Depends(require_api_key)])
 @limiter.limit("60/minute")
 def get_disk_info(request: Request, serial: str):
-    serial = normalize_barcode(serial)
+    serial = validate_barcode_length(normalize_barcode(serial), field_name="serial")
     if not serial:
         raise HTTPException(status_code=400, detail={"error": "serial requerido"})
 

@@ -378,8 +378,13 @@
       $("result").classList.add("visible");
     }
 
+    function getNormalizedSerial() {
+      return window.normalizeScannedCode($("serial").value);
+    }
+
     $("serial").addEventListener("input", () => {
-      const val = $("serial").value.trim();
+      const val = getNormalizedSerial();
+      $("serial").value = val;
       setResult(null);
       setMsg("");
       clearTimeout(searchDebounce);

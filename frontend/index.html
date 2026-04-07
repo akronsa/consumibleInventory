@@ -834,9 +834,14 @@
       info.classList.add("visible");
     }
 
+    function getNormalizedBarcode() {
+      return window.normalizeScannedCode($("barcode").value);
+    }
+
     // Detección de producto al escanear
     $("barcode").addEventListener("input", () => {
-      const code = $("barcode").value.trim();
+      const code = getNormalizedBarcode();
+      $("barcode").value = code;
       if (code.length < 3) { setProduct(null); return; }
       lastCodeScanned = code;
       clearTimeout(barcodeDebounce);
@@ -871,7 +876,7 @@
     // Consumo
     async function consume() {
       if (!selectedUser) { setMsg("Seleccioná un usuario primero.", "err"); return; }
-      const code = $("barcode").value.trim() || lastCodeScanned;
+      const code = getNormalizedBarcode() || lastCodeScanned;
       if (!code) { setMsg("Escaneá un producto.", "err"); return; }
 
       $("barcode").value = "";

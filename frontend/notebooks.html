@@ -754,6 +754,10 @@
       }
     }
 
+    function getNormalizedBarcode() {
+      return window.normalizeScannedCode($("barcode").value);
+    }
+
     function setProduct(product) {
       currentProduct = product;
       const info = $("productInfo");
@@ -798,7 +802,8 @@
 
     // ── Lookup al escanear ──
     $("barcode").addEventListener("input", () => {
-      const code = $("barcode").value.trim();
+      const code = getNormalizedBarcode();
+      $("barcode").value = code;
       currentBarcode = code;
       setProduct(null);
       showManualForm(false);

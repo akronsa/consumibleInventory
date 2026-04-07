@@ -1,4 +1,8 @@
 (function () {
+  function normalizeScannedCode(value) {
+    return String(value || "").replace(/\s+/g, "").trim();
+  }
+
   function initBarcodeScanner(options) {
     const settings = options || {};
     const getById = settings.getById || ((id) => document.getElementById(id));
@@ -43,14 +47,17 @@
     }
 
     function emitCode(code) {
+      const normalizedCode = normalizeScannedCode(code);
+      if (!normalizedCode) return;
+
       if (typeof onDetected === "function") {
-        onDetected(code);
+        onDetected(normalizedCode);
         return;
       }
 
       const input = getById(inputId);
       if (!input) return;
-      input.value = code;
+      input.value = normalizedCode;
       input.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
@@ -262,5 +269,6 @@
     return { openScanner, closeScanner };
   }
 
+  window.normalizeScannedCode = normalizeScannedCode;
   window.initBarcodeScanner = initBarcodeScanner;
 })();
