@@ -10,6 +10,7 @@ services:
       PORT: "3000"
     volumes:
       - /etc/akron/certs:/certs:ro
+      - notebooks_data:/app/data
     restart: unless-stopped
     expose:
       - "3000"
@@ -34,3 +35,6 @@ services:
 networks:
   glpi_net:
     driver: bridge
+
+volumes:
+  notebooks_data:
