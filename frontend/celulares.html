@@ -12,29 +12,36 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --red:    #ED1C24;
-      --dark:   #58595B;
-      --mid:    #7f8284;
-      --light:  #f3f3f3;
-      --border: #e0e0e0;
-      --white:  #ffffff;
-      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --red: #ED1C24;
+      --red-dark: #BA1017;
+      --dark: #58595B;
+      --ink: #2F3031;
+      --mid: #7F8284;
+      --light: #F4F3F1;
+      --border: rgba(88, 89, 91, 0.12);
+      --white: #FFFFFF;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.10);
+      --panel: rgba(255,255,255,0.84);
     }
 
     body {
       font-family: 'Barlow Condensed', system-ui, sans-serif;
       font-weight: 500;
-      background: var(--light);
-      color: var(--dark);
+      background:
+        radial-gradient(circle at top left, rgba(237, 28, 36, 0.10), transparent 32%),
+        linear-gradient(180deg, #FAF9F7 0%, var(--light) 100%);
+      color: var(--ink);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     header {
-      background: var(--dark);
-      padding: 0 40px;
-      height: 64px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 72px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -43,24 +50,27 @@
       z-index: 100;
     }
 
-    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .logo-img { height: 36px; width: auto; display: block; }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .logo-img { height: 34px; width: auto; display: block; }
+    .logo-copy { display: flex; flex-direction: column; gap: 2px; }
+    .logo-kicker { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: var(--mid); }
+    .logo-title { font-size: 20px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--dark); }
 
     .header-title {
-      font-size: 14px; font-weight: 600;
-      color: rgba(255,255,255,0.45);
+      font-size: 12px; font-weight: 600;
+      color: var(--mid);
       text-transform: uppercase;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.12em;
+      padding: 8px 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.72);
     }
 
-    /* ── Sidebar ── */
     .sidebar {
       position: fixed;
-      top: 64px;
+      top: 72px;
       left: 0;
       width: 240px;
-      height: calc(100vh - 64px);
-      background: #3a3b3d;
+      height: calc(100vh - 72px);
+      background: linear-gradient(180deg, #4a4b4d 0%, #363739 100%);
       z-index: 90;
       overflow-y: auto;
       transform: translateX(-100%);
@@ -588,6 +598,7 @@
     <button class="btn-menu" id="btnMenu" aria-label="Menu"><span></span><span></span><span></span></button>
     <a class="logo" href="index.html">
       <img class="logo-img" src="/logo.png" alt="Akron" />
+      <span class="logo-copy"><span class="logo-kicker">Sistema interno</span><span class="logo-title">IT Akron</span></span>
     </a>
     <span class="header-title">Gestión de celulares</span>
   </header>
