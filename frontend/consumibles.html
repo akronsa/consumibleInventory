@@ -176,34 +176,19 @@
     }
 
     input::placeholder { color: #b1bec5; }
-      background: var(--light);
-      border: 2px solid transparent;
-      padding: 14px 16px;
-        font-size: 12px;
-      outline: none;
-        color: var(--mid);
-    }
-        letter-spacing: 0.12em;
-        padding: 8px 10px;
-        border: 1px solid var(--border);
-        background: rgba(255,255,255,0.72);
-    input[type="text"]:focus, input[type="search"]:focus {
-      border-color: var(--red);
-      background: var(--white);
-        color: var(--dark);
-
-    input::placeholder { color: #b1bec5; }
 
     /* ── User dropdown ── */
-    ul {
-        background: rgba(255,255,255,0.88);
+    #userList {
+      list-style: none;
+      background: rgba(255,255,255,0.94);
       border: 2px solid var(--border);
-      margin-top: 4px;
+      margin-top: 6px;
       max-height: 220px;
       overflow-y: auto;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.08);
     }
 
-    li {
+    #userList li {
       padding: 12px 16px;
       border-top: 1px solid var(--border);
       cursor: pointer;
@@ -213,43 +198,42 @@
       transition: background .2s ease, color .2s ease;
     }
 
-    li:first-child { border-top: none; }
+    #userList li:first-child { border-top: none; }
 
-    li:hover {
+    #userList li:hover {
       background: var(--red);
       color: var(--white);
     }
 
     /* ── User badge ── */
-      top: 60px;
+    .user-badge {
       display: none;
       align-items: center;
       gap: 10px;
-      padding: 0 16px;
-      height: 60px;
       padding: 10px 16px;
       margin-top: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      background: var(--light);
+      border-left: 3px solid var(--red);
+      min-height: 60px;
     }
 
     .user-badge.visible { display: flex; }
 
     .user-badge span {
+      display: block;
       font-size: 11px;
-      <span class="logo-copy">
-        <span class="logo-kicker">Sistema interno</span>
-        <span class="logo-title">IT Akron</span>
-      </span>
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: rgba(255,255,255,0.5);
+      color: var(--mid);
     }
 
-    .user-badge-name { font-size: 16px; }
+    .user-badge-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark);
+      margin-top: 2px;
+    }
 
     .badge-dot {
       width: 8px;
