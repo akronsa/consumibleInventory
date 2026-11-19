@@ -25,7 +25,15 @@ services:
     environment:
       API_KEY: ${API_KEY:?API_KEY not set}
     ports:
-      - "80:80"
+      - "8081:80"   # acceso directo por IP (HTTP); el acceso normal es vía Traefik
+    labels:
+      # Publicado por el Traefik del host en https://it.ad.akron.com.ar
+      # con el wildcard *.ad.akron.com.ar de AD CS (ver github.com/akronsa/docker-traefik).
+      - traefik.enable=true
+      - traefik.http.routers.consumibles.entrypoints=websecure
+      - traefik.http.routers.consumibles.rule=Host(`it.ad.akron.com.ar`)
+      - traefik.http.routers.consumibles.tls=true
+      - traefik.http.services.consumibles.loadbalancer.server.port=80
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
     restart: unless-stopped

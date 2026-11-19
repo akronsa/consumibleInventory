@@ -78,7 +78,9 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-El frontend queda disponible en el puerto **80**.
+La app se publica en **https://it.ad.akron.com.ar** a través del Traefik del host ([akronsa/docker-traefik](https://github.com/akronsa/docker-traefik)), que termina el TLS con el wildcard `*.ad.akron.com.ar` de AD CS. La ruta se define con los labels de `frontend` en `docker-compose.yml`.
+
+El puerto **8081** del host queda para acceso directo por HTTP, como contingencia. El escáner de cámara no funciona por ahí, porque el navegador solo permite usar la cámara en HTTPS.
 
 ---
 
