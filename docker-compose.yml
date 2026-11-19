@@ -25,7 +25,7 @@ services:
     environment:
       API_KEY: ${API_KEY:?API_KEY not set}
     ports:
-      - "8081:80"   # acceso directo por IP (HTTP); el acceso normal es vía Traefik
+      - "8100:80"   # acceso directo por IP (HTTP); el acceso normal es vía Traefik
     labels:
       # Publicado por el Traefik del host en https://it.ad.akron.com.ar
       # con el wildcard *.ad.akron.com.ar de AD CS (ver github.com/akronsa/docker-traefik).
